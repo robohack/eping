@@ -1,4 +1,6 @@
-	@(#)RELEASE_NOTES       e07@nikhef.nl (Eric Wassenaar) 970525
+	@(#)RELEASE_NOTES       e07@nikhef.nl (Eric Wassenaar) 970828
+
+	URL	ftp://ftp.nikhef.nl/pub/network/ping.tar.Z
 
 yymmdd		Description of changes per release
 CHANGES		Changes with respect to original utility
@@ -9,6 +11,16 @@ NOTES		Important issues to keep in mind
 # ----------------------------------------------------------------------
 # Description of changes per release
 # ----------------------------------------------------------------------
+
+970828
+	Linux portability fixes.
+		On certain platforms the standard include files expect
+		the symbol __BSD_SOURCE whereas the compilers define
+		the symbol  _BSD_SOURCE instead.
+	Minor portability fixes.
+		Use explicit casts for ntohs()/htons() in a few places
+		to avoid compiler warnings on some platforms.
+	There are no functional changes in this release.
 
 970525
 	More linux portability changes.
@@ -106,7 +118,7 @@ NOTES		Important issues to keep in mind
 
 951024
 	Correct various misspellings.
-		There are no functional changes in this release.
+	There are no functional changes in this release.
 
 951016
 	Enhance rtt statistics printout.
@@ -133,7 +145,7 @@ NOTES		Important issues to keep in mind
 		instead of type struct sockaddr. The first one has
 		stricter alignment restrictions, although they have
 		the same size.
-		There are no functional changes in this release.
+	There are no functional changes in this release.
 
 950918
 	Disable all reverse DNS lookups in numeric mode.

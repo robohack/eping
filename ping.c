@@ -26,7 +26,7 @@
  */
 
 #ifndef lint
-static char Version[] = "@(#)ping.c	e07@nikhef.nl (Eric Wassenaar) 970525";
+static char Version[] = "@(#)ping.c	e07@nikhef.nl (Eric Wassenaar) 970828";
 #endif
 
 #if defined(apollo) && defined(lint)
@@ -846,7 +846,7 @@ char *argv[];
 	}
 
 	/* indicate success or failure */
-	exit(got_there ? EX_SUCCESS : EX_UNAVAILABLE);
+	return(got_there ? EX_SUCCESS : EX_UNAVAILABLE);
 	/*NOTREACHED*/
 }
 

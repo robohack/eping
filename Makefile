@@ -1,4 +1,4 @@
-#	@(#)Makefile            e07@nikhef.nl (Eric Wassenaar) 961230
+#	@(#)Makefile            e07@nikhef.nl (Eric Wassenaar) 970616
 
 # ----------------------------------------------------------------------
 # Adapt the installation directories to your local standards.
@@ -151,6 +151,11 @@ CLEANUP = $(PROG) $(OBJS) $(TARFILE) $(TARFILE).Z
 # Rules for installation.
 # ----------------------------------------------------------------------
 
+OWNER = root
+GROUP = network
+MODE  = 4755
+STRIP = -s
+
 all: $(PROG)
 
 $(OBJS): $(SRCS) $(HDRS)
@@ -159,7 +164,7 @@ $(PROG): $(OBJS)
 	$(CC) $(LDFLAGS) -o $(PROG) $(OBJS) $(LIBRARIES)
 
 install: $(PROG)
-	$(INSTALL) -m 4755 -o root -g network -s $(PROG) $(BINDIR)
+	$(INSTALL) -m $(MODE) -o $(OWNER) -g $(GROUP) $(STRIP) $(PROG) $(BINDIR)
 
 man: $(MANS)
 	$(INSTALL) -m 444 ping.8 $(MANDIR)
