@@ -26,7 +26,7 @@
  */
 
 #ifndef lint
-static char Version[] = "@(#)ping.c	e07@nikhef.nl (Eric Wassenaar) 980228";
+static char Version[] = "@(#)ping.c	e07@nikhef.nl (Eric Wassenaar) 980831";
 #endif
 
 #if defined(apollo) && defined(lint)
@@ -2395,6 +2395,17 @@ struct ip *ip;				/* returned ip packet buffer */
 int cc;					/* size of ip packet */
 {
 	int iphdrlen;			/* total size of ip header */
+
+/*
+ * Some platforms return the entire header in network byte order.
+ */
+#ifdef RAW_IP_NET_ORDER
+	ip->ip_id  = ntohs(ip->ip_id);
+	ip->ip_sum = ntohs(ip->ip_sum);
+
+	ip->ip_len = ntohs((u_short)ip->ip_len);
+	ip->ip_off = ntohs((u_short)ip->ip_off);
+#endif /*RAW_IP_NET_ORDER*/
 
 /*
  * Dump the ip header.

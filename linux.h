@@ -1,15 +1,35 @@
 /*
 ** Special compatibility definitions for linux.
 **
-**	On the linux platform, several IP-related structures have
-**	different names. Also some of the structure fields have
+**	On the linux platform, several IP-related structures may have
+**	different names. Also some of the structure fields may have
 **	other names, although the layout is (obviously) fixed.
-**	Several constants are not defined in the standard files.
+**	Several constants may not be defined in the standard files.
 **
-**	@(#)linux.h             e07@nikhef.nl (Eric Wassenaar) 980228
+**	@(#)linux.h             e07@nikhef.nl (Eric Wassenaar) 980826
 */
 
-#if defined(linux) && !defined(__FAVOR_BSD)
+#if defined(linux)
+
+/*
+ * The definitions below are necessary for those versions that do not
+ * have the real BSD netinet include files, probably all pre-glibc.
+ *
+ * If IPVERSION is defined, there is a struct ip, otherwise there is
+ * only a struct iphdr.
+ *
+ * If there is a struct ip, the checksum field is usually defined by
+ * ip_csum, but sometimes by ip_sum. It remains unclear when.
+ *
+ * In case no special compile flags are given, the <features.h> file
+ * sets _BSD_SOURCE and __USE_BSD but not __FAVOR_BSD, so that the
+ * definitions below are applied.
+ *
+ * If _BSD_SOURCE is defined in advance, __FAVOR_BSD is set as well,
+ * and the definitions below are skipped.
+ */
+
+#if !defined(__FAVOR_BSD)
 
 #include <linux/version.h>	/* to get the proper LINUX_VERSION_CODE */
 
@@ -50,8 +70,8 @@ struct ip {
 
 #else /* IPVERSION */
 
-#if (LINUX_VERSION_CODE <= 131104)	/* 2.0.32 */
-#define ip_sum ip_csum
+#if !defined(LINUX_IPSUM)
+#define ip_sum ip_csum			/* struct ip defines ip_csum */
 #endif
 
 #endif /* IPVERSION */
@@ -62,9 +82,9 @@ struct ip {
  * Structure of an icmp header.
  */
 
-#define n_short u_short
-#define n_long  u_int
-#define n_time  u_int
+#define n_short u_short			/* normally defined in in_systm.h */
+#define n_long  u_int			/* redefine for 64-bit machines */
+#define n_time  u_int			/* redefine for 64-bit machines */
 
 struct icmp {
 	u_char	icmp_type;		/* type of message, see below */
@@ -147,6 +167,15 @@ struct icmp {
 #define uh_sum		check
 
 /*
+ * Definitions needed for the tcp header structure.
+ */
+
+#if 0
+#define th_sport	source
+#define th_dport	dest
+#endif
+
+/*
  * Some IP options have different names as well.
  */
 
@@ -157,5 +186,7 @@ struct icmp {
 #ifndef IPOPT_SATID
 #define IPOPT_SATID	IPOPT_SID
 #endif
+
+#endif /* __FAVOR_BSD */
 
 #endif /* linux */

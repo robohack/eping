@@ -1,7 +1,7 @@
 /*
 ** Various portability definitions.
 **
-**	@(#)port.h              e07@nikhef.nl (Eric Wassenaar) 971112
+**	@(#)port.h              e07@nikhef.nl (Eric Wassenaar) 980831
 */
 
 #if defined(__SVR4) || defined(__svr4__)
@@ -44,6 +44,22 @@
 
 #if defined(BIND_49) && defined(__BIND)
 #define BIND_493
+#endif
+
+/*
+** On some platforms a raw IP packet must be in network byte order.
+** Most systems require certain fields in machine byte order,
+** and perform the htons()/ntohs() conversion within the kernel.
+** Some systems require everything to be in network order.
+** Note that this is relevant only for little-endian machines.
+*/
+
+#if defined(sun) && defined(SVR4)
+#define RAW_IP_NET_ORDER
+#endif
+
+#if defined(linux)
+#define RAW_IP_NET_ORDER
 #endif
 
 /*
