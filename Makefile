@@ -1,4 +1,4 @@
-#	@(#)Makefile            e07@nikhef.nl (Eric Wassenaar) 980228
+#	@(#)Makefile            e07@nikhef.nl (Eric Wassenaar) 980828
 
 # ----------------------------------------------------------------------
 # Adapt the installation directories to your local standards.
@@ -34,7 +34,11 @@ SYSDEFS = -DSYSV
 SYSDEFS = -DNO_YP_LOOKUP
 #endif
 
-#if defined(linux) && You have the real BSD netinet header files
+#if defined(linux) && The IP checksum is now ip_sum and no longer ip_csum
+SYSDEFS = -DLINUX_IPSUM
+#endif
+
+#if defined(linux) && You have the real BSD netinet header files (GLIBC)
 SYSDEFS = -D_BSD_SOURCE
 #endif
 
