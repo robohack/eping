@@ -1,14 +1,13 @@
 /*
 ** Declaration of functions.
 **
-**	@(#)defs.h              e07@nikhef.nl (Eric Wassenaar) 960314
+**	@(#)defs.h              e07@nikhef.nl (Eric Wassenaar) 961230
 */
 
 /*
 ** Internal modules of the ping utility
 ** ------------------------------------
 */
-
 	/* main.c */
 
 int main		PROTO((int, char **));
@@ -21,7 +20,6 @@ void get_socket		PROTO((void));
 #ifdef IP_OPTIONS
 void set_options	PROTO((void));
 #endif /*IP_OPTIONS*/
-
 
 	/* ping.c */
 
@@ -36,8 +34,7 @@ sigtype_t prefinish	PROTO((int));
 sigtype_t finish	PROTO((int));
 void cleanup		PROTO((void));
 
-
-	/* util.c */
+	/* dump.c */
 
 void print_icmph	PROTO((struct icmp *, int));
 void print_ippkt	PROTO((struct ip *, int));
@@ -47,6 +44,9 @@ void print_options	PROTO((u_char *, int));
 void print_route	PROTO((u_char *));
 bool check_route	PROTO((u_char *, int));
 #endif /*IP_OPTIONS*/
+
+	/* util.c */
+
 char *pr_port		PROTO((char *, u_short));
 char *pr_addr		PROTO((struct in_addr));
 char *inetname		PROTO((struct in_addr));
@@ -70,13 +70,17 @@ ipaddr_t getgate	PROTO((char *));
 bool gatewayaddr	PROTO((struct in_addr));
 bool bcast_addr		PROTO((struct in_addr));
 
-
 	/* misc.c */
 
+char *maxstr		PROTO((char *, int, bool));
 ptr_t *xalloc		PROTO((ptr_t *, siz_t));
 char *itoa		PROTO((int));
 double xsqrt		PROTO((double));
 
+	/* host.c */
+
+void get_targets	PROTO((int, char **));
+void add_host		PROTO((char *));
 
 	/* omni.c */
 
@@ -88,15 +92,47 @@ int initdevice		PROTO((char *));
 ** External library functions
 ** --------------------------
 */
-
 	/* extern */
 
 ipaddr_t inet_addr	PROTO((CONST char *));
 char *inet_ntoa		PROTO((struct in_addr));
-char *index		PROTO((const char *, char));
-char *rindex		PROTO((const char *, char));
+
+	/* avoid <strings.h> */
+
+#if !defined(index)
+
+char *index		PROTO((const char *, int));
+char *rindex		PROTO((const char *, int));
+
+#endif
+
+	/* <string.h> */
+
+#if !defined(NO_STRING_H)
+#include <string.h>
+#else
+
 char *strcpy		PROTO((char *, const char *));
+char *strncpy		PROTO((char *, const char *, siz_t));
+
+#endif
+
+	/* <stdlib.h> */
+
+#if defined(__STDC__) && !defined(apollo)
+#include <stdlib.h>
+#else
+
 char *getenv		PROTO((const char *));
 ptr_t *malloc		PROTO((siz_t));
 ptr_t *realloc		PROTO((ptr_t *, siz_t));
+free_t free		PROTO((ptr_t *));
 void exit		PROTO((int));
+
+#endif
+
+	/* <unistd.h> */
+
+#if defined(__STDC__) && !defined(apollo)
+#include <unistd.h>
+#endif

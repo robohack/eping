@@ -1,16 +1,22 @@
 /*
 ** Various portability definitions.
 **
-**	@(#)port.h              e07@nikhef.nl (Eric Wassenaar) 960302
+**	@(#)port.h              e07@nikhef.nl (Eric Wassenaar) 961229
 */
 
+#if defined(linux)
+#include "linux.h"
+#endif
+
 #if defined(SYSV) || defined(SVR4)
+#define SYSV_MALLOC
 #define SYSV_MEMSET
 #define SYSV_STRCHR
 #define SYSV_SETVBUF
 #endif
 
 #if defined(__hpux) || defined(hpux)
+#define SYSV_MALLOC
 #define SYSV_SETVBUF
 #endif
 
@@ -60,9 +66,15 @@ typedef void	sigtype_t;
 #define sig_return(n)	return
 #endif
 
-/* too primitive */
+#ifdef SYSV_MALLOC
+typedef void	ptr_t;		/* generic pointer type */
+typedef u_int	siz_t;		/* general size type */
+typedef void	free_t;
+#else
 typedef char	ptr_t;		/* generic pointer type */
 typedef u_int	siz_t;		/* general size type */
+typedef int	free_t;
+#endif
 
 #ifdef SYSV_MEMSET
 #define bzero(a,n)	(void) memset(a,'\0',n)
@@ -97,6 +109,10 @@ typedef u_int	siz_t;		/* general size type */
 */
 
 #define PROTO(TYPES)	()
+
+#if !defined(__STDC__) || defined(apollo)
+#define const
+#endif
 
 #if defined(__STDC__) && defined(BIND_49)
 #define CONST	const

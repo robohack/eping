@@ -1,4 +1,4 @@
-	@(#)RELEASE_NOTES       e07@nikhef.nl (Eric Wassenaar) 960314
+	@(#)RELEASE_NOTES       e07@nikhef.nl (Eric Wassenaar) 961230
 
 yymmdd		Description of changes per release
 CHANGES		Changes with respect to original utility
@@ -9,6 +9,34 @@ NOTES		Important issues to keep in mind
 # ----------------------------------------------------------------------
 # Description of changes per release
 # ----------------------------------------------------------------------
+
+961230
+	Port to linux platform.
+		Some additions were needed to the linux.h include file.
+		This file is now invoked by port.h if appropriate.
+		Tested by Larry Schwimmer <rosebud@cyclone.Stanford.EDU>
+	Portability issues.
+		Bypass bug in <netinet/ip.h> on alpha osf/1 platform.
+		From Larry Schwimmer <rosebud@cyclone.Stanford.EDU>
+	Optionally restrict special ping modes.
+		The special ping modes can be disallowed for ordinary
+		users via individual compile-time switches in conf.h
+		or all at once via a Makefile configuration definition.
+		Asked by Larry Schwimmer <rosebud@cyclone.Stanford.EDU>
+	Extra safety checks.
+		After a positive return from an ordinary gethostbyname
+		or gethostbyaddr we cannot be absolutely sure that the
+		size of the canonical h_name is within bounds.
+		Make timeval subtraction more robust.
+	Configurable defaults.
+		Make various default values configurable in conf.h
+	Miscellaneous changes.
+		Attempt to further reduce lint clutter. It is difficult
+		to eliminate this altogether. There are too many subtle
+		differences between various platforms.
+	More preparation for multi-target mode.
+		Add new code in preparation for multi-target mode a la
+		fping. Still not complete.
 
 960314
 	Add loose source route gateways.
