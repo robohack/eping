@@ -26,7 +26,7 @@
  */
 
 #ifndef lint
-static char Version[] = "@(#)ping.c	e07@nikhef.nl (Eric Wassenaar) 961230";
+static char Version[] = "@(#)ping.c	e07@nikhef.nl (Eric Wassenaar) 970525";
 #endif
 
 #if defined(apollo) && defined(lint)
@@ -94,6 +94,10 @@ static char Version[] = "@(#)ping.c	e07@nikhef.nl (Eric Wassenaar) 961230";
 #undef NOERROR			/* in <sys/streams.h> on solaris 2.x */
 #include <arpa/nameser.h>
 #include <resolv.h>
+
+#if defined(linux)
+#include "linux.h"		/* special compatibility definitions */
+#endif
 
 #include "port.h"		/* various portability definitions */
 #include "conf.h"		/* various configuration definitions */

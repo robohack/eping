@@ -6,7 +6,7 @@
 **	other names, although the layout is (obviously) fixed.
 **	Several constants are not defined in the standard files.
 **
-**	@(#)linux.h             e07@nikhef.nl (Eric Wassenaar) 961229
+**	@(#)linux.h             e07@nikhef.nl (Eric Wassenaar) 970524
 */
 
 #if defined(linux)
@@ -21,6 +21,8 @@ error "Undefined or invalid BYTE_ORDER";
 /*
  * Structure of an ip header, without options.
  */
+
+#if !defined(_BSD_SOURCE)
 
 #define	IPVERSION	4
 
@@ -44,6 +46,12 @@ struct ip {
 	struct	in_addr ip_src,ip_dst;	/* source and dest address */
 };
 
+#else /* _BSD_SOURCE */
+
+#define ip_sum ip_csum
+
+#endif /* _BSD_SOURCE */
+
 #define	IP_MAXPACKET	65535		/* maximum packet size */
 
 /*
@@ -51,6 +59,7 @@ struct ip {
  */
 
 #define n_short u_short
+#define n_long  u_int
 #define n_time  u_int
 
 struct icmp {
@@ -81,7 +90,7 @@ struct icmp {
 			struct ip idi_ip;
 			/* options and then 64 bits of data */
 		} id_ip;
-		u_long	id_mask;
+		n_long	id_mask;
 		char	id_data[1];
 	} icmp_dun;
 #define	icmp_otime	icmp_dun.id_ts.its_otime

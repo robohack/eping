@@ -1,12 +1,8 @@
 /*
 ** Various portability definitions.
 **
-**	@(#)port.h              e07@nikhef.nl (Eric Wassenaar) 961229
+**	@(#)port.h              e07@nikhef.nl (Eric Wassenaar) 970525
 */
-
-#if defined(linux)
-#include "linux.h"
-#endif
 
 #if defined(SYSV) || defined(SVR4)
 #define SYSV_MALLOC
