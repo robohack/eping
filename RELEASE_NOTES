@@ -1,4 +1,4 @@
-	@(#)RELEASE_NOTES       e07@nikhef.nl (Eric Wassenaar) 961230
+	@(#)RELEASE_NOTES       e07@nikhef.nl (Eric Wassenaar) 970525
 
 yymmdd		Description of changes per release
 CHANGES		Changes with respect to original utility
@@ -9,6 +9,12 @@ NOTES		Important issues to keep in mind
 # ----------------------------------------------------------------------
 # Description of changes per release
 # ----------------------------------------------------------------------
+
+970525
+	More linux portability changes.
+		Certain newer linux versions now define struct ip.
+		It remains unclear what the exact criteria are.
+		Move include of linux.h to a more appropriate place.
 
 961230
 	Port to linux platform.
