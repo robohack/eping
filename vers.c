@@ -1,8 +1,8 @@
 #ifndef lint
-static char Version[] = "@(#)vers.c	e07@nikhef.nl (Eric Wassenaar) 950918";
+static char Version[] = "@(#)vers.c	e07@nikhef.nl (Eric Wassenaar) 950930";
 #endif
 
-char *version = "950918";
+char *version = "950930";
 
 #if defined(apollo)
 int h_errno = 0;

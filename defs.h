@@ -1,16 +1,8 @@
 /*
 ** Declaration of functions.
 **
-**	@(#)defs.h              e07@nikhef.nl (Eric Wassenaar) 950909
+**	@(#)defs.h              e07@nikhef.nl (Eric Wassenaar) 950930
 */
-
-/* extern */
-ipaddr_t inet_addr	PROTO((char *));
-char *inet_ntoa		PROTO((struct in_addr));
-char *rindex		PROTO((char *, char));
-char *strcpy		PROTO((char *, char *));
-char *malloc		PROTO((int));
-void exit		PROTO((int));
 
 /* main.c */
 int main		PROTO((int, char **));
@@ -60,3 +52,11 @@ char *itoa		PROTO((int));
 #ifdef OMNINET
 int initdevice		PROTO((char *));
 #endif /*OMNINET*/
+
+/* extern */
+ipaddr_t inet_addr	PROTO((CONST char *));
+char *inet_ntoa		PROTO((struct in_addr));
+char *strcpy		PROTO((char *, const char *));
+char *rindex		PROTO((const char *, char));
+char *malloc		PROTO((int));
+void exit		PROTO((int));
