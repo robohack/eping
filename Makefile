@@ -1,4 +1,4 @@
-#	@(#)Makefile            e07@nikhef.nl (Eric Wassenaar) 960302
+#	@(#)Makefile            e07@nikhef.nl (Eric Wassenaar) 961230
 
 # ----------------------------------------------------------------------
 # Adapt the installation directories to your local standards.
@@ -49,6 +49,9 @@ CONFIGDEFS = -DMULTIPLE_IP_OPTIONS
 
 # If sendto() accepts a different maximum size for atomic packets
 CONFIGDEFS = -DMAXPKT=8192
+
+# If special ping modes should be restricted only to the superuser
+CONFIGDEFS = -DRESTRICT_PINGMODES
 
 CONFIGDEFS =
 
@@ -130,7 +133,7 @@ SHELL = /bin/sh
 # Files.
 # ----------------------------------------------------------------------
 
-HDRS = port.h conf.h exit.h icmp.h defs.h
+HDRS = port.h conf.h linux.h exit.h icmp.h defs.h
 SRCS = ping.c omni.c vers.c
 OBJS = ping.o omni.o vers.o
 PROG = ping
@@ -171,6 +174,9 @@ clean:
 lint:
 	lint $(DEFS) $(SRCS)
 
+alint:
+	alint $(DEFS) $(SRCS)
+
 llint:
 	lint $(DEFS) $(SRCS) -lresolv
 
@@ -178,7 +184,7 @@ print:
 	lpr -J $(PACKAGE) -p Makefile $(DOCS) $(HDRS) $(SRCS)
 
 dist:
-	tar cf $(TARFILE) $(FILES) linux.h
+	tar cf $(TARFILE) $(FILES)
 	compress $(TARFILE)
 
 depend:

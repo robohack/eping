@@ -6,7 +6,7 @@
 **	other names, although the layout is (obviously) fixed.
 **	Several constants are not defined in the standard files.
 **
-**	@(#)linux.h             e07@nikhef.nl (Eric Wassenaar) 960301
+**	@(#)linux.h             e07@nikhef.nl (Eric Wassenaar) 961229
 */
 
 #if defined(linux)
@@ -49,6 +49,9 @@ struct ip {
 /*
  * Structure of an icmp header.
  */
+
+#define n_short u_short
+#define n_time  u_int
 
 struct icmp {
 	u_char	icmp_type;		/* type of message, see below */
@@ -129,5 +132,17 @@ struct icmp {
 #define uh_dport	dest
 #define uh_ulen		len
 #define uh_sum		check
+
+/*
+ * Some IP options have different names as well.
+ */
+
+#ifndef IPOPT_SECURITY
+#define IPOPT_SECURITY	IPOPT_SEC
+#endif
+
+#ifndef IPOPT_SATID
+#define IPOPT_SATID	IPOPT_SID
+#endif
 
 #endif /* linux */

@@ -1,7 +1,7 @@
 /*
 ** Various configuration definitions.
 **
-**	@(#)conf.h              e07@nikhef.nl (Eric Wassenaar) 960314
+**	@(#)conf.h              e07@nikhef.nl (Eric Wassenaar) 961230
 */
 
 /*
@@ -18,11 +18,23 @@
 
 #ifndef MAXPKT
 
-#if defined(sun) || defined(hpux) || defined(__hpux) || defined(ultrix)
+#if defined(sun)
 #define	MAXPKT	2048
 #endif
 
-#if defined(sgi) || defined(apollo)
+#if defined(hpux) || defined(__hpux)
+#define	MAXPKT	2048
+#endif
+
+#if defined(ultrix)
+#define	MAXPKT	2048
+#endif
+
+#if defined(sgi)
+#define	MAXPKT	8192
+#endif
+
+#if defined(apollo)
 #define	MAXPKT	8192
 #endif
 
@@ -49,3 +61,31 @@
 #define MULTIPLE_IP_OPTIONS		/* assume it is okay nowadays */
 
 #endif /*MULTIPLE_IP_OPTIONS*/
+
+/*
+** RESTRICT_PINGMODES -- Restrict special ping modes to the superuser
+** ------------------------------------------------------------------
+**
+**	The special ping modes, especially the flood ping mode, may
+**	generate an undesired network load if not used with care.
+**	They can be disabled for the ordinary user.
+**	Note that you can restrict each of them individually.
+*/
+
+#ifdef RESTRICT_PINGMODES
+
+#define RESTRICT_FLOOD			/* disallow flood ping */
+#define RESTRICT_CISCO			/* disallow cisco ping */
+#define RESTRICT_FAST			/* disallow fast ping */
+
+#endif /*RESTRICT_PINGMODES*/
+
+/*
+ * Miscellaneous default values.
+ */
+
+#define DEF_TIMEOUT	1	/* -t  timeout between packets (secs) */
+#define DEF_DELAY	10	/* -w  delay in flood mode (millisecs) */
+
+#define DEF_RETRIES	2	/* number of datagram retries per nameserver */
+#define DEF_RETRANS	3	/* timeout (seconds) between datagram retries */

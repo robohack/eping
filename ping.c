@@ -26,11 +26,15 @@
  */
 
 #ifndef lint
-static char Version[] = "@(#)ping.c	e07@nikhef.nl (Eric Wassenaar) 960314";
+static char Version[] = "@(#)ping.c	e07@nikhef.nl (Eric Wassenaar) 961230";
 #endif
 
 #if defined(apollo) && defined(lint)
 #define __attribute(x)
+#endif
+ 
+#if defined(__alpha) && defined(__osf__) && __GNUC__
+#define __STDC__ 2		/* workaround for alpha <netinet/ip.h> bug */
 #endif
 
 #undef  obsolete		/* old code left as a reminder */
@@ -64,7 +68,6 @@ static char Version[] = "@(#)ping.c	e07@nikhef.nl (Eric Wassenaar) 960314";
 #include <stdio.h>
 #include <errno.h>
 #include <ctype.h>
-#include <string.h>
 #include <signal.h>
 #include <setjmp.h>
 #include <netdb.h>
@@ -134,6 +137,7 @@ int optargc = 0;		/* number of arguments in new argument list */
 #ifndef MAX_IPOPTLEN
 #define MAX_IPOPTLEN	40	/* max ip options buffer size */
 #endif
+
 #define IPOPT_HDRLEN	3	/* actually IPOPT_MINOFF - 1 */
 
 #ifndef MAXPKT
@@ -197,8 +201,8 @@ bool looseroute = FALSE;	/* -L  enable loose source routing */
  * Command line parameters.
  */
 
-int delay = 10;			/* -w  delay in flood mode (millisecs) */
-int timeout = 1;		/* -t  timeout between packets (secs) */
+int timeout = DEF_TIMEOUT;	/* -t  timeout between packets (secs) */
+int delay = DEF_DELAY;		/* -w  delay in flood mode (millisecs) */
 int netbits = 0;		/* -b  number of bits for network mask */
 int preload = 0;		/* -p  number of packets to "preload" */
 int filldata = 0;		/* -D  pattern for data packet specified */
@@ -327,11 +331,9 @@ optstr *optchain = NULL;	/* chain of recorded routes */
 
 #define NOT_DOTTED_QUAD	((ipaddr_t)-1)
 
-#define	MAXWAIT		5	/* max secs to wait for final response */
-
-#define	RCVBUF	48*1024		/* size of receive buffer to specify */
-
-#define STDOUT	1
+#define	RCVBUF	(48*1024)	/* size of receive buffer to specify */
+#define	MAXWAIT	5		/* max secs to wait for final response */
+#define STDOUT	1		/* stdout file descriptor */
 
 /*
  * Useful inline functions.
@@ -343,6 +345,8 @@ optstr *optchain = NULL;	/* chain of recorded routes */
 #define sameaddr(a,b)	((a)->sin_addr.s_addr == (b)->sin_addr.s_addr)
 #define bitset(bit, w)	(((w) & (bit)) != 0)
 #define plural(n)	(((n) == 1) ? "" : "s")
+#define strlength(s)	(int)strlen(s)
+#define setalarm(n)	(void) alarm((unsigned int)(n))
 
 #define is_xdigit(c)	(isascii(c) && isxdigit(c))
 #define is_space(c)	(isascii(c) && isspace(c))
@@ -350,14 +354,15 @@ optstr *optchain = NULL;	/* chain of recorded routes */
 #define is_upper(c)	(isascii(c) && isupper(c))
 #define is_lower(c)	(isascii(c) && islower(c))
 
-#define	atox(c)		(is_digit(c) ? (c - '0')      : \
-			(is_upper(c) ? (c - 'A' + 10) : \
-			(is_lower(c) ? (c - 'a' + 10) : 0)))
+#define	atox(c)		(is_digit(c) ? ((c) - '0')      : \
+			(is_upper(c) ? ((c) - 'A' + 10) : \
+			(is_lower(c) ? ((c) - 'a' + 10) : 0)))
 
-#define newlist(a,n,t)	(t *)xalloc((ptr_t *)a, (siz_t)((n)*sizeof(t)))
+#define newlist(a,n,t)	(t *)xalloc((ptr_t *)(a), (siz_t)((n)*sizeof(t)))
 #define newstruct(t)	(t *)xalloc((ptr_t *)NULL, (siz_t)(sizeof(t)))
 #define newstring(s)	(char *)xalloc((ptr_t *)NULL, (siz_t)(strlen(s)+1))
 #define newstr(s)	strcpy(newstring(s), s)
+#define xfree(a)	(void) free((ptr_t *)(a))
 
 #ifdef DEBUG
 #define assert(condition)\
@@ -392,7 +397,7 @@ Options: [-b netbits] [-g gateway] [-t timeout]\
 **
 **	Exit status:
 **		Various possibilities from <sysexits.h> among which
-**		EX_OK		At least one valid response received
+**		EX_SUCCESS	At least one valid response received
 **		EX_UNAVAILABLE	In case there were none
 **		EX_NOHOST	Could not lookup explicit host
 **		EX_OSERR	Could not obtain resources
@@ -599,7 +604,7 @@ char *argv[];
 		    case 'V':
 			/* just print version number */
 			printf("Version %s\n", version);
-			exit(EX_OK);
+			exit(EX_SUCCESS);
 
 		    default:
 			fatal(Usage, program);
@@ -609,6 +614,30 @@ char *argv[];
 
 	    argv++; argc--;
 	}
+
+/*
+ * Special ping modes may have been restricted to the superuser.
+ */
+#ifdef RESTRICT_FLOOD
+
+	if ((pingmode == PING_FLOOD) && !superuser())
+		fatal("Must be root for flood ping option -f");
+
+#endif
+
+#ifdef RESTRICT_CISCO
+
+	if ((pingmode == PING_CISCO) && !superuser())
+		fatal("Must be root for cisco ping option -c");
+
+#endif
+
+#ifdef RESTRICT_FAST
+
+	if (fastping && !superuser())
+		fatal("Must be root for fast ping option -F");
+
+#endif
 
 /*
  * Check availability of special routing options.
@@ -658,9 +687,14 @@ char *argv[];
 
 /*
  * Setup for special multi-target mode.
+ * All remaining arguments are potential host names or addresses.
+ * If none are given, they come from stdin. Unknown hosts are skipped.
  */
 	if (multihost)
 	{
+		/* fetch target addresses */
+		get_targets(argc, argv);
+
 		/* not yet supported */
 		exit(EX_USAGE);
 	}
@@ -668,6 +702,7 @@ char *argv[];
 /*
  * Setup for traditional ping mode.
  * Fetch (mandatory) remote host address(es) to probe.
+ * This host must exist, if given by name.
  */
 	if (argc < 2 || argv[1] == NULL)
 		fatal(Usage, program);
@@ -685,7 +720,9 @@ char *argv[];
 			exit(EX_NOHOST);
 		}
 
-		hostname = strcpy(hostnamebuf, hp->h_name);
+		hostname = strncpy(hostnamebuf, hp->h_name, MAXDNAME);
+		hostname[MAXDNAME] = '\0';
+
 		for (i = 0; i < MAXADDRS && hp->h_addr_list[i]; i++)
 		{
 			bcopy(hp->h_addr_list[i], (char *)&inaddr, INADDRSZ);
@@ -703,6 +740,7 @@ char *argv[];
 	else
 	{
 		hostname = strcpy(hostnamebuf, inetname(inaddr));
+
 		hostaddr[0] = addr;
 		naddrs = 1;
 	}
@@ -725,13 +763,12 @@ char *argv[];
 /*
  * Miscellaneous initialization.
  */
-
 	/* our packet identifier */
 	ident = getpid() & 0xFFFF;
 
 	/* set shorter nameserver timeout */
-	_res.retry = 2;		/* number  of retries, default = 4 */
-	_res.retrans = 3;	/* timeout in seconds, default = 5 or 6 */
+	_res.retry = DEF_RETRIES;	/* number of datagram retries */
+	_res.retrans = DEF_RETRANS;	/* timeout between retries */
 
 #ifdef IP_OPTIONS
 	/* here we route our own reply packet */
@@ -766,9 +803,7 @@ char *argv[];
 		(void) initdevice(OMNINET);
 #endif /*OMNINET*/
 
-/*
- * Allocate and configure raw icmp socket.
- */
+	/* allocate and configure raw icmp socket */
 	check_proto();
 	get_socket();
 
@@ -807,7 +842,7 @@ char *argv[];
 	}
 
 	/* indicate success or failure */
-	exit(got_there ? EX_OK : EX_UNAVAILABLE);
+	exit(got_there ? EX_SUCCESS : EX_UNAVAILABLE);
 	/*NOTREACHED*/
 }
 
@@ -1344,7 +1379,7 @@ resend:
 
 			/* schedule next alarm */
 			(void) signal(SIGALRM, ping_alarm);
-			(void) alarm((unsigned)waittime);
+			setalarm(waittime);
 		}
 	}
 	else if (broadcast || ((pings.rcvd + pings.fail) < ntransmitted))
@@ -1362,7 +1397,7 @@ resend:
 
 		/* schedule shutdown */
 		(void) signal(SIGALRM, finish);
-		(void) alarm((unsigned)waittime);
+		setalarm(waittime);
 	}
 	else
 	{
@@ -1959,7 +1994,7 @@ int sig;				/* nonzero on interrupt */
  */
 	/* no more background action */
 	(void) signal(SIGALRM, SIG_IGN);
-	(void) alarm((unsigned)0);
+	setalarm(0);
 
 	/* and no more special interrupt handling */
 	(void) signal(SIGINT, SIG_DFL);
@@ -2061,7 +2096,7 @@ cleanup()
 		for (q = NULL, p = optchain; p != NULL; p = q)
 		{
 			q = p->next;
-			(void) free((char *)p);
+			xfree(p);
 		}
 		optchain = NULL;
 	}
@@ -2074,7 +2109,7 @@ cleanup()
 		for (q = NULL, p = hostchain; p != NULL; p = q)
 		{
 			q = p->next;
-			(void) free((char *)p);
+			xfree(p);
 		}
 		hostchain = NULL;
 	}
@@ -2561,6 +2596,7 @@ u_short port;				/* port number in network order */
 		(void) sprintf(buf, "%s", service->s_name);
 	else
 		(void) sprintf(buf, "%d", (int)ntohs(port));
+
 	return(buf);
 }
 
@@ -2588,6 +2624,7 @@ struct in_addr inaddr;			/* IP address */
 		(void) sprintf(buf, "%s (%s)", host, inet_ntoa(inaddr));
 	else
 		(void) sprintf(buf, "%s", inet_ntoa(inaddr));
+
 	return(buf);
 }
 
@@ -2615,6 +2652,7 @@ struct in_addr inaddr;			/* IP address */
 		(void) strcpy(buf, host);
 	else
 		(void) strcpy(buf, inet_ntoa(inaddr));
+
 	return(buf);
 }
 
@@ -2669,7 +2707,7 @@ struct in_addr inaddr;			/* IP address to map */
 	hp = gethostbyaddr((char *)&inaddr, INADDRSZ, AF_INET);
 
 	if (hp != NULL)
-		host = newstr(hp->h_name);
+		host = maxstr(newstr(hp->h_name), MAXDNAME, FALSE);
 	else
 		host = NULL;
 
@@ -3071,10 +3109,13 @@ struct timeval *t1;			/* oldest timeval */
 	register time_t usec;
 
 	t2->tv_usec -= t1->tv_usec;
-	if (t2->tv_usec < 0)
+	while (t2->tv_usec < 0)
 	{
-		t2->tv_sec--;
 		t2->tv_usec += 1000000;
+		if (t2->tv_sec != 0)
+			t2->tv_sec--;
+		else
+			t2->tv_usec = 0;
 	}
 
 	if (t2->tv_sec < t1->tv_sec)
@@ -3120,6 +3161,7 @@ time_t usec;				/* value to convert */
 		(void) sprintf(buf, "%ld.%ld", usec/1000, (usec%1000)/100);
 	else
 		(void) sprintf(buf, "%ld", (usec + 500)/1000);
+
 	return(buf);
 }
 
@@ -3376,6 +3418,34 @@ struct in_addr inaddr;			/* IP address */
 }
 
 /*
+** MAXSTR -- Ensure string does not exceed maximum size
+** ----------------------------------------------------
+**
+**	Returns:
+**		Pointer to the (possibly truncated) string.
+**
+**	If necessary, a new string is allocated, and is then
+**	truncated, and the original string is left intact.
+**	Otherwise the original string is truncated in place.
+**
+*/
+
+char *
+maxstr(string, n, save)
+char *string;				/* the string to check */
+int n;					/* the maximum allowed size */
+bool save;				/* allocate new string, if set */
+{
+	if (strlength(string) > n)
+	{
+		if (save)
+			string = newstr(string);
+		string[n] = '\0';
+	}
+	return(string);
+}
+
+/*
 ** XALLOC -- Allocate or reallocate additional memory
 ** --------------------------------------------------
 **
@@ -3449,4 +3519,158 @@ double y;
 	} while (0 < x && x < t);
 
 	return(x);
+}
+
+
+/*
+ * Host chain for multi-target ping.
+ */
+
+typedef struct _hostdata {
+	struct _hostdata *next;		/* next in chain */
+	struct timeval pingtime;	/* time when last processed */
+	struct in_addr inaddr;		/* IP address */
+	char *host;			/* host name */
+	int seqnum;			/* index in host table */
+	int pktcnt;			/* number of packets sent */
+} hostdata;
+
+hostdata *hostlist = NULL;	/* chain of target hosts */
+hostdata **hosttab = NULL;	/* table of target hosts */
+int nhosts = 0;			/* number of target hosts in table */
+
+/*
+** GET_TARGETS -- Accumulate list of target hosts
+** ----------------------------------------------
+*/
+
+void
+get_targets(argc, argv)
+int argc;				/* command line arg count */
+char *argv[];				/* command line arguments */
+{
+	register int i;
+	register char *p, *q;
+	char buf[BUFSIZ];
+
+	if (argc > 1)
+	{
+		/* fetch targets from command line */
+		for (i = 1; i < argc && argv[i] != NULL; i++)
+		{
+			add_host(argv[i]);
+		}
+	}
+	else
+	{
+		/* fetch targets from standard input */
+		while (fgets(buf, sizeof(buf), stdin) != NULL)
+		{
+			p = index(buf, '\n');
+			if (p != NULL)
+				*p = '\0';
+
+			for (p = buf; is_space(*p); p++)
+				continue;
+
+			/* skip comment lines */
+			if (*p == '\0' || *p == '#')
+				continue;
+
+			/* only extract first item per line */
+			for (q = p; *q != '\0' && !is_space(*q); q++)
+				continue;
+
+			if (*q != '\0')
+				*q = '\0';
+
+			add_host(p);
+		}
+	}
+}
+
+/*
+** ADD_HOST -- Add new host to the target list
+** -------------------------------------------
+*/
+
+void
+add_host(host)
+char *host;				/* host name or dotted quad */
+{
+	register int i;
+	ipaddr_t addr;
+	struct in_addr inaddr;
+	struct hostent *hp;
+
+/*
+ * Determine all addresses of the given host.
+ */
+	addr = inet_addr(host);
+	inaddr.s_addr = addr;
+
+	if (addr == NOT_DOTTED_QUAD)
+	{
+		hp = gethostbyname(host);
+		if (hp == NULL)
+		{
+			error("Unknown host %s", host);
+			return;
+		}
+
+		hostname = strncpy(hostnamebuf, hp->h_name, MAXDNAME);
+		hostname[MAXDNAME] = '\0';
+
+		for (i = 0; i < MAXADDRS && hp->h_addr_list[i]; i++)
+		{
+			bcopy(hp->h_addr_list[i], (char *)&inaddr, INADDRSZ);
+			hostaddr[i] = inaddr.s_addr;
+		}
+		naddrs = i;
+
+		/* prep the address cache */
+		for (i = 0; i < naddrs; i++)
+		{
+			inaddr.s_addr = hostaddr[i];
+			(void) maphostbyaddr(inaddr);
+		}
+	}
+	else
+	{
+		hostname = strcpy(hostnamebuf, inetname(inaddr));
+
+		hostaddr[0] = addr;
+		naddrs = 1;
+	}
+
+/*
+ * Add this entry on the host list.
+ */
+	for (i = 0; i < naddrs; i++)
+	{
+		register hostdata *h;
+
+		inaddr.s_addr = hostaddr[i];
+		if (bcast_addr(inaddr))
+			fatal("No multi ping to broadcast address");
+
+		/* allocate new entry */
+		h = newstruct(hostdata);
+		h->host = newstr(hostname);
+		h->inaddr = inaddr;
+		h->seqnum = nhosts;
+		h->pktcnt = 0;
+
+		/* link it in */
+		h->next = hostlist;
+		hostlist = h;
+
+		/* extend the host table */
+		hosttab = newlist(hosttab, nhosts+1, hostdata *);
+		hosttab[nhosts] = h;
+		nhosts++;
+
+		if (!alladdr)
+			break;
+	}
 }
