@@ -1,6 +1,7 @@
-	@(#)RELEASE_NOTES       e07@nikhef.nl (Eric Wassenaar) 980831
+	@(#)RELEASE_NOTES       e07@nikhef.nl (Eric Wassenaar) 990522
 
 	URL	ftp://ftp.nikhef.nl/pub/network/ping.tar.Z
+	URL	http://www.nikhef.nl/user/e07
 
 yymmdd		Description of changes per release
 CHANGES		Changes with respect to original utility
@@ -11,6 +12,39 @@ NOTES		Important issues to keep in mind
 # ----------------------------------------------------------------------
 # Description of changes per release
 # ----------------------------------------------------------------------
+
+990522
+	Minor portability changes.
+		AIX needs <sys/select.h>
+		Reported by Andreas Ley <andy@rz.uni-karlsruhe.de>
+	There are no functional changes in this release.
+
+990517
+	Fix bug in rtt reporting.
+		Certain ranges of rtt values were printed incorrectly.
+		Noted by Les Cottrell <cottrell@slac.stanford.edu>
+
+990511
+	Minor portability changes.
+		Solaris 2.7 defines `ipaddr_t'. Can you believe it.
+		Fix glitch for bsdi.
+		Noted by Paul Eggert <eggert@twinsun.com>
+	There are no functional changes in this release.
+
+990412
+	Allow setting of TOS.
+		The new option -T allows specifying an explicit tos
+		in the IP header of the ICMP echo packet. This has
+		effect only in case IP_TOS is defined on a platform.
+		On the HP-UX 10.* platform, IP_TOS is now defined, but
+		the corresponding setsockopt() always fails with either
+		"Permission denied" or "Operation not supported".
+		Requested by Les Cottrell <cottrell@slac.stanford.edu>
+
+	Linux socket options fix.
+		On the linux platform, the SO_xxx socket option codes
+		are not binary disjunct as they are on other platforms.
+		Reported by Martin Mares <mj@ucw.cz>
 
 980831
 	Raw IP portability fix.
