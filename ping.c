@@ -26,7 +26,7 @@
  */
 
 #ifndef lint
-static char Version[] = "@(#)ping.c	e07@nikhef.nl (Eric Wassenaar) 970828";
+static char Version[] = "@(#)ping.c	e07@nikhef.nl (Eric Wassenaar) 980228";
 #endif
 
 #if defined(apollo) && defined(lint)
@@ -70,7 +70,6 @@ static char Version[] = "@(#)ping.c	e07@nikhef.nl (Eric Wassenaar) 970828";
 #include <ctype.h>
 #include <signal.h>
 #include <setjmp.h>
-#include <netdb.h>
 
 #include <sys/types.h>		/* not always automatically included */
 #include <sys/param.h>
@@ -91,6 +90,7 @@ static char Version[] = "@(#)ping.c	e07@nikhef.nl (Eric Wassenaar) 970828";
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
 
+#include <netdb.h>
 #undef NOERROR			/* in <sys/streams.h> on solaris 2.x */
 #include <arpa/nameser.h>
 #include <resolv.h>
@@ -107,10 +107,6 @@ static char Version[] = "@(#)ping.c	e07@nikhef.nl (Eric Wassenaar) 970828";
 #ifndef MAXDNAME
 #define MAXDNAME	256	/* maximum length of domain name */
 #endif
-
-typedef int	bool;		/* boolean type */
-#define TRUE	1
-#define FALSE	0
 
 #ifdef lint
 #define EXTERN
@@ -212,6 +208,7 @@ int preload = 0;		/* -p  number of packets to "preload" */
 int filldata = 0;		/* -D  pattern for data packet specified */
 int datalen = DATALEN;		/* -l  size of probe packet */
 int packetcount = 0;		/* -k  maximum number of packets to send */
+char *source = NULL;		/* -s  specific source of multi-homed sender */
 
 /*
  * Description of target host.
@@ -247,11 +244,10 @@ int reply = ICMP_ECHOREPLY;	/* expected inbound reply type */
 
 #define MAXIPOPT	9	/* MAX_IPOPTLEN-IPOPT_MINOFF / INADDRSZ */
 #define MAXLSRR (MAXIPOPT-1)	/* leave room for destination address */
+#define MAXGATE (MAXLSRR*MAXADDRS)
 
 ipaddr_t lsrraddr[MAXLSRR];	/* loose source route addresses */
 int nlsrr = 0;			/* count of loose source route addresses */
-
-#define MAXGATE (MAXLSRR*MAXADDRS)
 
 ipaddr_t gateaddr[MAXGATE];	/* all known gateway addresses */
 int ngate = 0;			/* count of all known gateway addresses */
@@ -388,7 +384,7 @@ static char Usage[] =
 Usage:   %s [options] host [length [count]]\n\
 Flags:   [-c|-f] [-F] [-Q] [-LR] [-a] [-mnqv] [-dr]\n\
 Options: [-l length] [-k count] [-p preload] [-D pattern]\n\
-Options: [-b netbits] [-g gateway] [-t timeout]\
+Options: [-b netbits] [-g gateway] [-s source_addr] [-t timeout]\
 ";
 
 /*
@@ -580,7 +576,11 @@ char *argv[];
 			break;
 
 		    case 's':
-			/* compat with older versions */
+			/* explicit own source address */
+			if (argv[2] == NULL || argv[2][0] == '-')
+				fatal("Missing source address");
+			source = argv[2];
+			argc--, argv++;
 			break;
 
 		    case 't':
@@ -663,7 +663,7 @@ char *argv[];
 #endif /*IP_OPTIONS*/
 
 /*
- * Pickup our own address.
+ * Pickup our own address. An explicit source address may be set later.
  */
 	if (gethostname(hostnamebuf, MAXDNAME) < 0)
 	{
@@ -812,6 +812,24 @@ char *argv[];
 	get_socket();
 
 /*
+ * Define explicit source address in output packet, if specified.
+ */
+	if (source)
+	{
+		addr = inet_addr(source);
+		if (addr == NOT_DOTTED_QUAD)
+			fatal("Illegal source address %s", source);
+
+		me->sin_addr.s_addr = addr;
+
+		if (bind(sock, myaddr_sa, sizeof(myaddr)) < 0)
+		{
+			perror("bind");
+			exit(EX_OSERR);
+		}
+	}
+
+/*
  * All set. Start off.
  */
 	/* don't need special privileges any more */
@@ -882,7 +900,7 @@ char *argv[];				/* original command line arguments */
 /*
  * Construct argument list from option string.
  */
-	for (q = "", p = newstr(option); *p != '\0'; p = q)
+	for (q = newstr(option), p = q; *p != '\0'; p = q)
 	{
 		while (is_space(*p))
 			p++;
@@ -1059,6 +1077,8 @@ check_proto()
 **
 **	A raw icmp socket is allocated. This can be done only by root.
 **	Extra socket options are set as requested on the command line.
+**	On certain platforms, the broadcast option must be explicitly
+**	turned on to allow pings to a network broadcast address.
 */
 
 void
@@ -1104,6 +1124,13 @@ get_socket()
 		}
 	}
 #endif /*SO_RCVBUF*/
+
+	if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST,
+		(char *)&on, sizeof(on)) < 0)
+	{
+		perror("setsockopt: SO_BROADCAST");
+		exit(EX_OSERR);
+	}
 }
 
 /*
@@ -1244,12 +1271,12 @@ int pass;				/* pass number */
 
 	if (!quick)
 	{
-		printf("%sPING %s: %d data byte%s", (pass > 0) ? "\n" : "",
-			pr_addr(to->sin_addr), datalen, plural(datalen));
+		printf("%sPING %s", (pass > 0) ? "\n" : "", pr_addr(to->sin_addr));
+		if (source) printf(" from %s", source);
+		printf(": %d data byte%s", datalen, plural(datalen));
 		if (npackets > 0)
 			printf(", %d packet%s", npackets, plural(npackets));
-		if (broadcast)
-			printf(", broadcast");
+		if (broadcast) printf(", broadcast");
 		printf("\n");
 	}
 
@@ -1392,7 +1419,7 @@ resend:
 		flushing = TRUE;
 
 		/* determine final timeout to shutdown */
-		if (pingmode == PING_CISCO)
+		if ((pingmode == PING_CISCO) || quick)
 			waittime = timeout;
 		else if (pings.rcvd > 0)
 			waittime = timeout + (pings.rttmax / 1000000);
@@ -2097,7 +2124,7 @@ cleanup()
 	{
 		register optstr *p, *q;
 
-		for (q = NULL, p = optchain; p != NULL; p = q)
+		for (q = optchain, p = q; p != NULL; p = q)
 		{
 			q = p->next;
 			xfree(p);
@@ -2110,7 +2137,7 @@ cleanup()
 	{
 		register hostinfo *p, *q;
 
-		for (q = NULL, p = hostchain; p != NULL; p = q)
+		for (q = hostchain, p = q; p != NULL; p = q)
 		{
 			q = p->next;
 			xfree(p);
@@ -3658,21 +3685,28 @@ char *host;				/* host name or dotted quad */
 		if (bcast_addr(inaddr))
 			fatal("No multi ping to broadcast address");
 
-		/* allocate new entry */
-		h = newstruct(hostdata);
-		h->host = newstr(hostname);
-		h->inaddr = inaddr;
-		h->seqnum = nhosts;
-		h->pktcnt = 0;
+		for (h = hostlist; h != NULL; h = h->next)
+			if (h->inaddr.s_addr == inaddr.s_addr)
+				break;
 
-		/* link it in */
-		h->next = hostlist;
-		hostlist = h;
+		if (h == NULL)
+		{
+			/* allocate new entry */
+			h = newstruct(hostdata);
+			h->host = newstr(hostname);
+			h->inaddr = inaddr;
+			h->seqnum = nhosts;
+			h->pktcnt = 0;
 
-		/* extend the host table */
-		hosttab = newlist(hosttab, nhosts+1, hostdata *);
-		hosttab[nhosts] = h;
-		nhosts++;
+			/* link it in */
+			h->next = hostlist;
+			hostlist = h;
+
+			/* extend the host table */
+			hosttab = newlist(hosttab, nhosts+1, hostdata *);
+			hosttab[nhosts] = h;
+			nhosts++;
+		}
 
 		if (!alladdr)
 			break;

@@ -1,4 +1,4 @@
-	@(#)RELEASE_NOTES       e07@nikhef.nl (Eric Wassenaar) 970828
+	@(#)RELEASE_NOTES       e07@nikhef.nl (Eric Wassenaar) 980228
 
 	URL	ftp://ftp.nikhef.nl/pub/network/ping.tar.Z
 
@@ -11,6 +11,54 @@ NOTES		Important issues to keep in mind
 # ----------------------------------------------------------------------
 # Description of changes per release
 # ----------------------------------------------------------------------
+
+980228
+	Portability fix.
+		Certain platforms need an explicit SO_BROADCAST socket
+		option to allow broadcast pings.
+	Linux portability fix.
+		Certain distributions, most probably depending on the
+		version of the glibc package, come with the real BSD
+		netinet include files. This obsoletes the supplied
+		linux.h file with portability hacks.
+		One may have to define _BSD_SOURCE in the Makefile
+		(which turns on the __FAVOR_BSD flag) to enforce this.
+	Miscellaneous changes.
+		In quick mode, don't use the maximum timeout during
+		the final wait.
+
+980102
+	Linux portability fix.
+		Well-known names of members in well-known structures
+		keep changing all the time. Can you believe it.
+
+971217
+	Specify explicit source address.
+		Allow specification of own source address for multi-
+		homed hosts. This is done via the new -s command line
+		option, similar to the -s option in traceroute.
+		The old undocumented dummy -s option has disappeared.
+		Asked by Jens Voeckler <voeckler@rvs.uni-hannover.de>
+	Minor portability changes.
+		Identify SVR4 platforms depending on cpp symbols,
+		which are different for various compilers.
+
+971007
+	Reconsider heuristic to determine BIND release.
+		Some vendors still ship new BIND 4.9 releases that have
+		the old struct ``state'' instead of ``__res_state''.
+		This is now controlled via Makefile CONFIGDEFS.
+	There are no functional changes in this release.
+
+971001
+	Backward compatibility fix.
+		Some vendors still ship old BIND 4.9 releases that have
+		the old struct ``state'' instead of ``__res_state''.
+	Minor portability fixes.
+		Properly identify certain platforms in port.h to avoid
+		compiler warnings.
+	Miscellaneous changes.
+		Minor esthetical code changes.
 
 970828
 	Linux portability fixes.
@@ -321,6 +369,9 @@ New features
 		options.
 	Loose source route gateways.
 		Define explicit loose source route to the target host.
+	Specify explicit source address.
+		Allow specification of own source address for multi-
+		homed hosts.
 
 # ----------------------------------------------------------------------
 # TODO

@@ -6,10 +6,12 @@
 **	other names, although the layout is (obviously) fixed.
 **	Several constants are not defined in the standard files.
 **
-**	@(#)linux.h             e07@nikhef.nl (Eric Wassenaar) 970821
+**	@(#)linux.h             e07@nikhef.nl (Eric Wassenaar) 980228
 */
 
-#if defined(linux)
+#if defined(linux) && !defined(__FAVOR_BSD)
+
+#include <linux/version.h>	/* to get the proper LINUX_VERSION_CODE */
 
 #include <endian.h>		/* to get the proper BYTE_ORDER */
 
@@ -48,7 +50,9 @@ struct ip {
 
 #else /* IPVERSION */
 
+#if (LINUX_VERSION_CODE <= 131104)	/* 2.0.32 */
 #define ip_sum ip_csum
+#endif
 
 #endif /* IPVERSION */
 

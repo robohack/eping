@@ -2,9 +2,9 @@
 .\" All rights reserved.  The Berkeley software License Agreement
 .\" specifies the terms and conditions for redistribution.
 .\"
-.\"	@(#)ping.8              e07@nikhef.nl (Eric Wassenaar) 960314
+.\"	@(#)ping.8              e07@nikhef.nl (Eric Wassenaar) 971217
 .\"
-.TH PING 8 "960314"
+.TH PING 8 "971217"
 .UC 6
 .SH NAME
 ping \- send ICMP ECHO request packets to network hosts
@@ -25,6 +25,7 @@ Options:
 [\fB\-b\fP \fInetbits\fP]
 [\fB\-g\fP \fIgateway\fP]
 [\fB\-t\fP \fItimeout\fP]
+[\fB\-s\fP \fIsource_addr\fP]
 .SH DESCRIPTION
 The Internet is a large and complex aggregation of network
 hardware, connected together by gateways. Tracking a single-point
@@ -146,6 +147,15 @@ In cisco or fast mode, this is the timeout ping will wait for a reply
 before sending the next packet. In these modes a new ping is sent as soon
 as a valid reply is received. In flood mode this timeout does not apply.
 The default value is 1 second.
+.TP
+.BI \-s " source_addr"
+Use the following IP address (which must be given as an IP number,
+not a hostname) as the source address in outgoing probe packets.
+On hosts with more than one IP address, this option can be used to
+force the source address to be something other than the IP address
+of the interface the probe packet is sent on.  If the IP address
+is not one of this machine's interface addresses, an error is
+returned and nothing is sent.
 .TP
 .BI \-g " gateway"
 Construct a "loose source route" via this gateway to the target host.
