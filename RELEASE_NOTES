@@ -1,4 +1,4 @@
-	@(#)RELEASE_NOTES       e07@nikhef.nl (Eric Wassenaar) 950918
+	@(#)RELEASE_NOTES       e07@nikhef.nl (Eric Wassenaar) 950930
 
 yymmdd		Description of changes per release
 CHANGES		Changes with respect to original utility
@@ -8,6 +8,14 @@ WISHLIST	Wishes expressed by various people
 # ----------------------------------------------------------------------
 # Description of changes per release
 # ----------------------------------------------------------------------
+
+950930
+	Avoid potential alignment conflicts.
+		Allocate socket addresses of type struct sockaddr_in
+		instead of type struct sockaddr. The first one has
+		stricter alignment restrictions, although they have
+		the same size.
+		There are no functional changes in this release.
 
 950918
 	Disable all reverse DNS lookups in numeric mode.

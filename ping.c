@@ -26,12 +26,15 @@
  */
 
 #ifndef lint
-static char Version[] = "@(#)ping.c	e07@nikhef.nl (Eric Wassenaar) 950918";
+static char Version[] = "@(#)ping.c	e07@nikhef.nl (Eric Wassenaar) 950930";
 #endif
 
 #if defined(apollo) && defined(lint)
 #define __attribute(x)
 #endif
+
+#undef  obsolete		/* old code left as a reminder */
+#undef  notyet			/* new code for possible future use */
 
 /*
  *			P I N G . C
@@ -207,13 +210,17 @@ int reply = ICMP_ECHOREPLY;	/* expected inbound reply type */
 int sock;			/* socket file descriptor */
 int sockopts = 0;		/* socket options */
 
-struct sockaddr myaddr;		/* address of ourselves */
-struct sockaddr toaddr;		/* address to send to */
-struct sockaddr fromaddr;	/* address to recv from */
+struct sockaddr_in myaddr;	/* address of ourselves */
+struct sockaddr_in toaddr;	/* address to send to */
+struct sockaddr_in fromaddr;	/* address to recv from */
 
 struct sockaddr_in *me   = (struct sockaddr_in *)&myaddr;
 struct sockaddr_in *to   = (struct sockaddr_in *)&toaddr;
 struct sockaddr_in *from = (struct sockaddr_in *)&fromaddr;
+
+struct sockaddr *myaddr_sa   = (struct sockaddr *)&myaddr;
+struct sockaddr *toaddr_sa   = (struct sockaddr *)&toaddr;
+struct sockaddr *fromaddr_sa = (struct sockaddr *)&fromaddr;
 
 u_char opacket[MAXPACKET];	/* outgoing packet */
 u_char ipacket[MAXPACKET];	/* incoming packet */
@@ -1161,7 +1168,7 @@ send_ping()
 	CLRBIT(icp->icmp_seq);
 
 	/* transmit the output packet */
-	cc = sendto(sock, (char *)opacket, len, 0, &toaddr, sizeof(toaddr));
+	cc = sendto(sock, (char *)opacket, len, 0, toaddr_sa, sizeof(toaddr));
 	if (cc < 0 || cc != len)
 	{
 		if (!quiet && (pingmode != PING_NORMAL))
@@ -1214,7 +1221,7 @@ restart:
 	len = sizeof(ipacket);
 	fromlen = sizeof(fromaddr);
 
-	cc = recvfrom(sock, (char *)ipacket, len, 0, &fromaddr, &fromlen);
+	cc = recvfrom(sock, (char *)ipacket, len, 0, fromaddr_sa, &fromlen);
 	if (cc <= 0)
 	{
 		/* shouldn't happen */

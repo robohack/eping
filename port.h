@@ -1,7 +1,7 @@
 /*
 ** Various portability definitions.
 **
-**	@(#)port.h              e07@nikhef.nl (Eric Wassenaar) 950425
+**	@(#)port.h              e07@nikhef.nl (Eric Wassenaar) 950930
 */
 
 #if defined(SYSV)
@@ -83,3 +83,9 @@ typedef void	sigtype_t;
 #endif
 
 #define PROTO(TYPES)	()
+
+#if defined(__STDC__) && defined(BIND_49)
+#define CONST	const
+#else
+#define CONST
+#endif

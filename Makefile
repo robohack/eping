@@ -1,4 +1,4 @@
-#	@(#)Makefile            e07@nikhef.nl (Eric Wassenaar) 950805
+#	@(#)Makefile            e07@nikhef.nl (Eric Wassenaar) 950930
 
 # ----------------------------------------------------------------------
 # Adapt the installation directories to your local standards.
@@ -34,7 +34,7 @@ SYSDEFS =
 
 # ----------------------------------------------------------------------
 # Configuration definitions.
-# See also the header file conf.h for further details.
+# See also the header file conf.h for more configuration definitions.
 # ----------------------------------------------------------------------
 
 # If this is a SUN with SunOS 4.1.x and you have an NC400 ethernet board
@@ -60,9 +60,10 @@ COPTS = -O
 CFLAGS = $(COPTS) $(DEFS)
 
 # Select your favorite compiler.
-CC = cc
 CC = /usr/ucb/cc			#if defined(solaris) && BSD
+CC = /bin/cc -arch m68k -arch i386	#if defined(next)
 CC = /bin/cc
+CC = cc
 
 # ----------------------------------------------------------------------
 # Linking definitions.
