@@ -5,10 +5,10 @@
 # ----------------------------------------------------------------------
 
 # This is where the ping executable will go.
-DESTBIN = /usr/local/etc
+DESTBIN = /local/sbin
 
 # This is where the ping manual page will go.
-DESTMAN = /usr/local/man
+DESTMAN = /local/share/man
 
 BINDIR = $(DESTBIN)
 MANDIR = $(DESTMAN)/man8
@@ -47,6 +47,7 @@ CONFIGDEFS = -DMULTIPLE_IP_OPTIONS
 CONFIGDEFS = -DMAXPKT=8192
 
 CONFIGDEFS =
+CONFIGDEFS = -DMULTIPLE_IP_OPTIONS
 
 # ----------------------------------------------------------------------
 # Compilation definitions.
@@ -81,6 +82,7 @@ RES = -lresolv
 COMPLIB =
 COMPLIB = ../compat/lib/lib44bsd.a
 COMPLIB = -lnet
+COMPLIB =
 
 LIBS = -lsocket -lnsl			#if defined(solaris) && not BSD
 LIBS =
@@ -124,7 +126,7 @@ $(PROG): $(OBJS)
 	$(CC) $(LDFLAGS) -o $(PROG) $(OBJS) $(LIBRARIES)
 
 install: $(PROG)
-	$(INSTALL) -m 4755 -o root -g network -s $(PROG) $(BINDIR)
+	$(INSTALL) -m 4555 -o root -g bin $(PROG) $(BINDIR)
 
 man: $(MANS)
 	$(INSTALL) -m 444 ping.8 $(MANDIR)
