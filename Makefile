@@ -1,4 +1,4 @@
-#	@(#)Makefile            e07@nikhef.nl (Eric Wassenaar) 970616
+#	@(#)Makefile            e07@nikhef.nl (Eric Wassenaar) 980228
 
 # ----------------------------------------------------------------------
 # Adapt the installation directories to your local standards.
@@ -34,12 +34,20 @@ SYSDEFS = -DSYSV
 SYSDEFS = -DNO_YP_LOOKUP
 #endif
 
+#if defined(linux) && You have the real BSD netinet header files
+SYSDEFS = -D_BSD_SOURCE
+#endif
+
 SYSDEFS =
 
 # ----------------------------------------------------------------------
 # Configuration definitions.
 # See also the header file conf.h for more configuration definitions.
 # ----------------------------------------------------------------------
+
+#if defined(BIND_49) && __res_state is still shipped as struct state
+CONFIGDEFS = -DOLD_RES_STATE
+#endif
 
 # If this is a SUN with SunOS 4.1.x and you have an NC400 ethernet board
 CONFIGDEFS = -DOMNINET='"ne0"'

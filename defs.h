@@ -1,7 +1,7 @@
 /*
 ** Declaration of functions.
 **
-**	@(#)defs.h              e07@nikhef.nl (Eric Wassenaar) 961230
+**	@(#)defs.h              e07@nikhef.nl (Eric Wassenaar) 970918
 */
 
 /*
@@ -94,8 +94,14 @@ int initdevice		PROTO((char *));
 */
 	/* extern */
 
+#if !defined(NO_INET_H)
+#include <arpa/inet.h>
+#else
+
 ipaddr_t inet_addr	PROTO((CONST char *));
 char *inet_ntoa		PROTO((struct in_addr));
+
+#endif
 
 	/* avoid <strings.h> */
 
@@ -135,4 +141,8 @@ void exit		PROTO((int));
 
 #if defined(__STDC__) && !defined(apollo)
 #include <unistd.h>
+#else
+
+unsigned int alarm	PROTO((unsigned int));
+
 #endif
