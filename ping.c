@@ -82,6 +82,9 @@ static char Version[] = "@(#)ping.c	e07@nikhef.nl (Eric Wassenaar) 990522";
 #if 1
 #include <sys/ioctl.h>		/* needed for TIOCGWINSZ */
 #endif
+#if defined(HAVE_TERMIOS) || defined(BSD4_4) || ((BSD - 0) >= 199306)
+# include <termios.h>
+#endif
 
 #include <netinet/in_systm.h>
 #include <netinet/in.h>
@@ -244,6 +247,10 @@ int ntransmitted = 0;		/* total number of packets transmitted */
 int npackets = 0;		/* maximum number of packets to send */
 int request = ICMP_ECHO;	/* outbound icmp request type */
 int reply = ICMP_ECHOREPLY;	/* expected inbound reply type */
+
+#if defined(SIGINFO) && defined(NOKERNINFO)
+int reset_kerninfo;
+#endif
 
 /*
  * Gateway addresses for loose source routing.
@@ -1259,6 +1266,9 @@ int pass;				/* pass number */
 {
 	register int i;
 	int cc;
+#if defined(SIGINFO) && defined(NOKERNINFO)
+	struct termios ts;
+#endif
 
 	/* setup ip address */
 	bzero((char *)&toaddr, sizeof(toaddr));
@@ -1297,6 +1307,17 @@ int pass;				/* pass number */
 
 	/* setup for first interrupt */
 	(void) signal(SIGINT, prefinish);
+#if defined(SIGINFO) && defined(NOKERNINFO)
+	if (tcgetattr (0, &ts) != -1) {
+		reset_kerninfo = !(ts.c_lflag & NOKERNINFO);
+		ts.c_lflag |= NOKERNINFO;
+		tcsetattr(STDIN_FILENO, TCSANOW, &ts);
+	}
+#endif
+
+#ifdef SIGINFO
+	(void)signal(SIGINFO, print_stats);
+#endif
 
 	/* force proper mode */
 	if (pingmode == PING_CISCO)
@@ -1413,16 +1434,18 @@ resend:
 		}
 		else
 		{
-			/* adjust timeout for slow links */
-			if (pings.rcvd > 0)
-				waittime = pings.rttmax / 1000000;
-			else
-				waittime = 0;
-			if (waittime < timeout)
+			if (!fastping) {
+				/* adjust timeout for slow links */
+				if (pings.rcvd > 0)
+					waittime = pings.rttmax / 1000000;
+				else
+					waittime = 0;
+				if (waittime < timeout)
+					waittime = timeout;
+				else
+					waittime = waittime + 1;
+			} else
 				waittime = timeout;
-			else
-				waittime = waittime + 1;
-
 			/* schedule next alarm */
 			(void) signal(SIGALRM, ping_alarm);
 			setalarm(waittime);
@@ -1434,7 +1457,7 @@ resend:
 		flushing = TRUE;
 
 		/* determine final timeout to shutdown */
-		if ((pingmode == PING_CISCO) || quick)
+		if ((pingmode == PING_CISCO) || quick || fastping)
 			waittime = timeout;
 		else if (pings.rcvd > 0)
 			waittime = timeout + (pings.rttmax / 1000000);
@@ -2067,34 +2090,12 @@ int sig;				/* nonzero on interrupt */
 /*
  * Print general statistics.
  */
-	printf("\n---- %s PING Statistics ----\n", pr_addr(to->sin_addr));
-	printf("%d packet%s transmitted", ntransmitted, plural(ntransmitted));
-	if (pings.fail > 0)
-		printf(", %d packet%s bounced", pings.fail, plural(pings.fail));
-	printf(", %d packet%s received", pings.rcvd, plural(pings.rcvd));
-	if (pings.dupl > 0)
-		printf(", %d duplicate%s", pings.dupl, plural(pings.dupl));
-	if (broadcast)
-		printf(", broadcast");
-	else if (pings.rcvd > ntransmitted)
-		printf(" -- somebody's printing up packets!");
-	else if (ntransmitted > 0)
-	{
-		int missed = ntransmitted - pings.rcvd;
-		double loss = 100 * (double)missed / (double)ntransmitted;
-
-		if (pings.rcvd == 0)
-			printf(", %d%% packet loss", 100);
-		else
-			printf(", %.2g%% packet loss", loss);
-	}
-	printf("\n");
-
+	print_gen_stats(&pings);
 /*
  * Print timing statistics, if appropriate.
  */
 	if (timing)
-		print_stats(&pings);
+		print_timing_stats(&pings);
 
 /*
  * Print responding hosts in broadcast mode.
@@ -2781,12 +2782,68 @@ struct in_addr inaddr;			/* IP address to map */
 }
 
 /*
-** PRINT_STATS -- Print round-trip statistics
-** ------------------------------------------
+** PRINT_GEN_STATS -- Print general statistics
+** --------------------------------_----------
+*/
+
+sigtype_t
+print_stats(sig)
+int sig;				/* nonzero on interrupt */
+{
+	int sav_errno = errno;		/* save across interrupt */
+
+	print_gen_stats(&pings);
+	if (timing)
+		print_timing_stats(&pings);
+
+	printf("\n");
+
+	/* restore state to avoid stale values */
+	errno = sav_errno;
+
+	sig_return(0);
+}
+
+/*
+** PRINT_GEN_STATS -- Print general statistics
+** --------------------------------_----------
 */
 
 void
-print_stats(sp)
+print_gen_stats(sp)
+stats *sp;				/* statistics buffer */
+{
+	printf("\n---- %s PING Statistics ----\n", pr_addr(to->sin_addr));
+	printf("%d packet%s transmitted", ntransmitted, plural(ntransmitted));
+	if (sp->fail > 0)
+		printf(", %d packet%s bounced", sp->fail, plural(sp->fail));
+	printf(", %d packet%s received", sp->rcvd, plural(sp->rcvd));
+	if (sp->dupl > 0)
+		printf(", %d duplicate%s", sp->dupl, plural(sp->dupl));
+	if (broadcast)
+		printf(", broadcast");
+	else if (sp->rcvd > ntransmitted)
+		printf(" -- somebody's printing up packets!");
+	else if (ntransmitted > 0)
+	{
+		int missed = ntransmitted - sp->rcvd;
+		double loss = 100 * (double)missed / (double)ntransmitted;
+
+		if (sp->rcvd == 0)
+			printf(", %d%% packet loss", 100);
+		else
+			printf(", %.2g%% packet loss", loss);
+	}
+	printf("\n");
+}
+
+/*
+** PRINT_TIMING_STATS -- Print round-trip statistics
+** -------------------------------------------------
+*/
+
+void
+print_timing_stats(sp)
 stats *sp;				/* statistics buffer */
 {
 	double rttavg;			/* average round-trip time */
@@ -3045,7 +3102,7 @@ show_routes()
 		print_options(opt->ipopt, opt->ipoptlen);
 
 		if (timing)
-			print_stats(&opt->stats);
+			print_timing_stats(&opt->stats);
 	}
 }
 
