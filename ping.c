@@ -26,7 +26,7 @@
  */
 
 #ifndef lint
-static char Version[] = "@(#)ping.c	e07@nikhef.nl (Eric Wassenaar) 980831";
+static char Version[] = "@(#)ping.c	e07@nikhef.nl (Eric Wassenaar) 990522";
 #endif
 
 #if defined(apollo) && defined(lint)
@@ -76,6 +76,9 @@ static char Version[] = "@(#)ping.c	e07@nikhef.nl (Eric Wassenaar) 980831";
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/file.h>
+#if defined(_AIX)
+#include <sys/select.h>		/* needed for fd_set */
+#endif
 #if 1
 #include <sys/ioctl.h>		/* needed for TIOCGWINSZ */
 #endif
@@ -160,6 +163,9 @@ u_char ipacket[MAXPACKET];	/* incoming packet */
 int sock;			/* socket file descriptor */
 int sockopts = 0;		/* socket options */
 
+#define SOCKOPT_DEBUG     0x0001
+#define SOCKOPT_DONTROUTE 0x0010
+
 struct sockaddr_in myaddr;	/* address of ourselves */
 struct sockaddr_in toaddr;	/* address to send to */
 struct sockaddr_in fromaddr;	/* address to recv from */
@@ -209,6 +215,7 @@ int filldata = 0;		/* -D  pattern for data packet specified */
 int datalen = DATALEN;		/* -l  size of probe packet */
 int packetcount = 0;		/* -k  maximum number of packets to send */
 char *source = NULL;		/* -s  specific source of multi-homed sender */
+int tos = 0;			/* -T  type of service */
 
 /*
  * Description of target host.
@@ -329,6 +336,9 @@ optstr *optchain = NULL;	/* chain of recorded routes */
  * Miscellaneous definitions.
  */
 
+#define MAXINT8		255
+#define MAXINT16	65535
+
 #define NOT_DOTTED_QUAD	((ipaddr_t)-1)
 
 #define	RCVBUF	(48*1024)	/* size of receive buffer to specify */
@@ -383,7 +393,7 @@ static char Usage[] =
 "\
 Usage:   %s [options] host [length [count]]\n\
 Flags:   [-c|-f] [-F] [-Q] [-LR] [-a] [-mnqv] [-dr]\n\
-Options: [-l length] [-k count] [-p preload] [-D pattern]\n\
+Options: [-l length] [-k count] [-p preload] [-D pattern] [-T tos]\n\
 Options: [-b netbits] [-g gateway] [-s source_addr] [-t timeout]\
 ";
 
@@ -497,7 +507,7 @@ char *argv[];
 
 		    case 'd':
 			/* socket debugging */
-			sockopts |= SO_DEBUG;
+			sockopts |= SOCKOPT_DEBUG;
 			break;
 
 		    case 'F':
@@ -572,7 +582,7 @@ char *argv[];
 
 		    case 'r':
 			/* don't use routing table */
-			sockopts |= SO_DONTROUTE;
+			sockopts |= SOCKOPT_DONTROUTE;
 			break;
 
 		    case 's':
@@ -580,6 +590,12 @@ char *argv[];
 			if (argv[2] == NULL || argv[2][0] == '-')
 				fatal("Missing source address");
 			source = argv[2];
+			argc--, argv++;
+			break;
+
+		    case 'T':
+			/* type-of-service */
+			tos = getval(argv[2], "tos value", 0, MAXINT8);
 			argc--, argv++;
 			break;
 
@@ -623,24 +639,18 @@ char *argv[];
  * Special ping modes may have been restricted to the superuser.
  */
 #ifdef RESTRICT_FLOOD
-
 	if ((pingmode == PING_FLOOD) && !superuser())
 		fatal("Must be root for flood ping option -f");
-
 #endif
 
 #ifdef RESTRICT_CISCO
-
 	if ((pingmode == PING_CISCO) && !superuser())
 		fatal("Must be root for cisco ping option -c");
-
 #endif
 
 #ifdef RESTRICT_FAST
-
 	if (fastping && !superuser())
 		fatal("Must be root for fast ping option -F");
-
 #endif
 
 /*
@@ -648,18 +658,14 @@ char *argv[];
  */
 #ifdef IP_OPTIONS
 #ifndef MULTIPLE_IP_OPTIONS
-
 	if ((traceroute && looseroute) && !superuser())
 		fatal("Conflicting options -R and -L");
-
 #endif
 #else /*IP_OPTIONS*/
-
 	if (traceroute)
 		error("record route not supported");
 	if (looseroute)
 		error("loose source route not supported");
-
 #endif /*IP_OPTIONS*/
 
 /*
@@ -1094,7 +1100,7 @@ get_socket()
 		exit(EX_OSERR);
 	}
 
-	if (bitset(SO_DEBUG, sockopts))
+	if (bitset(SOCKOPT_DEBUG, sockopts))
 	{
 		if (setsockopt(sock, SOL_SOCKET, SO_DEBUG,
 			(char *)&on, sizeof(on)) < 0)
@@ -1104,7 +1110,7 @@ get_socket()
 		}
 	}
 
-	if (bitset(SO_DONTROUTE, sockopts))
+	if (bitset(SOCKOPT_DONTROUTE, sockopts))
 	{
 		if (setsockopt(sock, SOL_SOCKET, SO_DONTROUTE,
 			(char *)&on, sizeof(on)) < 0)
@@ -1131,6 +1137,15 @@ get_socket()
 		perror("setsockopt: SO_BROADCAST");
 		exit(EX_OSERR);
 	}
+
+#ifdef IP_TOS
+	if ((tos > 0) && setsockopt(sock, IPPROTO_IP, IP_TOS,
+		(char *)&tos, sizeof(tos)) < 0)
+	{
+		perror("setsockopt: IP_TOS");
+		exit(EX_OSERR);
+	}
+#endif
 }
 
 /*
@@ -3194,15 +3209,28 @@ tvprint(usec)
 time_t usec;				/* value to convert */
 {
 	static char buf[30];		/* sufficient for 64-bit values */
+	time_t uval;
 
 	if (usec < 1000)
-		(void) sprintf(buf, "%ld.%ld", usec/1000, (usec%1000)/1);
+	{
+		uval = usec;
+		(void) sprintf(buf, "%ld.%3.3ld", uval/1000, uval%1000);
+	}
 	else if (usec < 10000)
-		(void) sprintf(buf, "%ld.%ld", usec/1000, (usec%1000)/10);
+	{
+		uval = (usec + 5)/10;
+		(void) sprintf(buf, "%ld.%2.2ld", uval/100, uval%100);
+	}
 	else if (usec < 100000)
-		(void) sprintf(buf, "%ld.%ld", usec/1000, (usec%1000)/100);
+	{
+		uval = (usec + 50)/100;
+		(void) sprintf(buf, "%ld.%1.1ld", uval/10, uval%10);
+	}
 	else
-		(void) sprintf(buf, "%ld", (usec + 500)/1000);
+	{
+		uval = (usec + 500)/1000;
+		(void) sprintf(buf, "%ld", uval);
+	}
 
 	return(buf);
 }

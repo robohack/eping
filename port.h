@@ -1,7 +1,7 @@
 /*
 ** Various portability definitions.
 **
-**	@(#)port.h              e07@nikhef.nl (Eric Wassenaar) 980831
+**	@(#)port.h              e07@nikhef.nl (Eric Wassenaar) 990511
 */
 
 #if defined(__SVR4) || defined(__svr4__)
@@ -25,6 +25,10 @@
 #endif
 
 #if defined(linux)
+#define SYSV_MALLOC
+#endif
+
+#if defined(bsdi) || defined(__bsdi__)
 #define SYSV_MALLOC
 #endif
 
@@ -92,10 +96,12 @@ typedef struct state		res_state_t;
 typedef struct __res_state	res_state_t;
 #endif
 
+#ifndef _IPADDR_T
 #if defined(__alpha) || defined(BIND_49)
 typedef u_int	ipaddr_t;
 #else
 typedef u_long	ipaddr_t;
+#endif
 #endif
 
 #if defined(apollo) || defined(_BSD_SIGNALS)
