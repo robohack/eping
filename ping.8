@@ -1,0 +1,198 @@
+.\" Copyright (c) 1985 Regents of the University of California.
+.\" All rights reserved.  The Berkeley software License Agreement
+.\" specifies the terms and conditions for redistribution.
+.\"
+.\"	@(#)ping.8              e07@nikhef.nl (Eric Wassenaar) 950918
+.\"
+.TH PING 8 "950918"
+.UC 6
+.SH NAME
+ping \- send ICMP ECHO request packets to network hosts
+.SH SYNOPSIS
+\fBping\fP [\fIoptions\fP] \fIhost\fP [\fIlength\fP [\fIcount\fP]]
+.sp
+Flags:
+[\fB\-c\fP | \fB\-f\fP] [\fB\-F\fP] [\fB\-Q\fP]
+[\fB\-LR\fP] [\fB\-amnqv\fP] [\fB\-dr\fP]
+.br
+Options:
+[\fB\-p\fP \fIpreload\fP]
+[\fB\-t\fP \fItimeout\fP]
+[\fB\-D\fP \fIpattern\fP]
+.SH DESCRIPTION
+The Internet is a large and complex aggregation of network
+hardware, connected together by gateways. Tracking a single-point
+hardware or software failure can often be difficult.
+.I ping
+utilizes the ICMP protocol's mandatory ECHO request datagram to
+elicit an ICMP ECHOREPLY from a host or gateway.
+ECHO request datagrams (``pings'') have an IP and ICMP header,
+followed by a \fBstruct timeval\fR, and then an arbitrary number
+of ``pad'' bytes used to fill out the packet. Default datagram
+length is 64 bytes (8 ICMP header bytes + 56 data bytes),
+but this may be changed using the command line option \fIlength\fP.
+.PP
+The default mode is to send a packet every \fItimeout\fP seconds and
+display the response, including sequence number and round-trip time
+if the packet size allows.  Two other modes are available (which are
+mutually exclusive):
+.SH SPECIAL MODES
+.TP
+.B \-c
+Use cisco style packet sending; that is, spew packets as fast as possible,
+but don't send packet N+1 until a reply or bounce or timeout has been
+registered for packet N.  A '!' is printed for every valid response received
+and a '.' is printed when no packet is received during the \fItimeout\fP
+period.  A duplicate response causes a '*' to be printed.
+When a ping request is bounced in transit, a '#' will be printed.
+.TP
+.B \-f
+Use floodping style packet sending; send packets as fast as possible,
+attempting to send at at least 100 packets per second.  A '.' is printed
+for every packet sent and a backspaced '!' for every valid response
+(a backspaced '#' when a ping request is bounced in transit).
+The number of visible dots indicates how much ping is ``behind''.
+A '*' is printed whenever a duplicate packet is received.  While waiting
+for outstanding packets during termination a '!' is printed per valid
+response and a '#' per bounced request.
+.SH FLAGS
+.TP
+.B \-F
+Fast ping.
+In normal mode, send a packet as soon as a response is received without
+delaying for the regular timeout period. This is similar to cisco style
+except for the printing of the response messages.
+.TP
+.B \-Q
+Quick ping.
+This suppresses all normal output as well as the final statistics
+summary.  The program quits with an ``alive'' indication as soon
+as a valid response is received. It quits with an ``unreachable''
+indication as soon as a bounce message is received.
+.TP
+.B \-L
+Insert "loose source route" IP option in outgoing packet.
+Currently this only selects a route to the destination host and back,
+without the possibility to specify intermediate gateways.
+This option only works on systems that allow setting of IP options.
+.TP
+.B \-R
+Insert "record route" IP option in outgoing packets, summarizing the
+routes the packets have travelled when the program quits.
+In "very verbose" mode, the route is displayed for each reply received.
+This option only works on systems that allow setting of IP options.
+.TP
+.B \-a
+All-address mode.
+If the destination host has multiple addresses, ping will probe
+all addresses if this option is set. Normally only the first address
+as returned by the DNS resolver is attempted.
+.TP
+.B \-m
+Missed mode.
+Enable printing of a summary of missed valid responses at the end.
+.TP
+.B \-n
+Numeric mode.
+Disable reverse hostname lookup of all IP addresses.  By default both
+hostname and IP address of the destination host are displayed in the
+header, summary and "record route" surveys. (In the response messages
+only the IP adress is shown to avoid potential nameserver timeouts).
+If the reverse hostname lookup fails, just the IP address is displayed.
+.TP
+.B \-q
+Quiet mode.
+Disable printing of ping response messages and special mode markers,
+only display the summary when quitting.
+This option is implied in quick (-Q) mode.
+.TP
+.B \-v
+Verbose mode.
+All received ICMP packets, including other than our own ECHOREPLY
+packets, are listed and a summary printout of their contents is made.
+When specified as \fB\-vv\fP (very verbose), loose source route and record
+route information (if present) is displayed for each response received.
+.TP
+.B \-d
+Enable socket level debugging with the SO_DEBUG option.
+.TP
+.B \-r
+Enable socket level processing with the SO_DONTROUTE option. Bypass the
+normal routing tables and send directly to a host on an attached network.
+If the host is not on a directly-attached network, an error is returned.
+This option can be used to ping a local host through an interface
+that has no route through it (e.g., after the interface was dropped by
+.IR routed (8C)).
+.SH OPTIONS
+.TP
+.BI \-t " timeout"
+In normal mode, this is the interval in seconds for sending ping messages.
+In cisco or fast mode, this is the timeout ping will wait for a reply
+before sending the next packet. In these modes a new ping is sent as soon
+as a valid reply is received. In flood mode this timeout does not apply.
+The default value is 1 second.
+.TP
+.BI \-p " preload"
+Specifies the number of packets to preload. They are sent at startup before
+listening for a response. The default is not to send any preload packets.
+.TP
+.BI \-D " pattern"
+Specifies the pattern to fill unused data in the packets. The default is
+to fill with the data position modulo 256. A pattern is a string of hex
+digit pairs used to specify the contents of the bytes of the packet.
+The pattern is replicated until it fills the entire packet.
+.SH OPERATION
+When using \fIping\fR for fault isolation, it should first be run on the
+local host, to verify that the local network interface is up and running.
+Then, hosts and gateways further and further away should be ``pinged''.
+\fIping\fR sends one ECHO datagram per \fItimeout\fP period, and prints
+one line of output for every ECHOREPLY returned (or a warning if a bounce
+message is received or no response at all).
+.sp
+If an optional \fIlength\fP is specified, it is used as the length of the
+data portion of the ICMP ECHO request packet.  The default \fIlength\fP
+is 56 data bytes.
+If an optional \fIcount\fP is given, only that number of requests is sent.
+.sp
+Round-trip times and packet loss statistics are computed. When all responses
+have been received or the program times out (with a \fIcount\fP specified),
+or if the program is terminated with a SIGINT, a brief summary is displayed.
+Additional info is printed depending on the command line flags.
+.PP
+This program is intended for use in network testing, measurement
+and management. It should be used primarily for manual fault isolation.
+Because of the load it could impose on the network, it is unwise to use
+\fIping\fP during normal operations or from automated scripts.
+.SH EXIT STATUS
+\fIping\fP returns a success (zero) exit code in case any valid response
+was received, and a failure (nonzero) code if there were none.
+.SH WARNING
+Specifying both \fB\-L\fP and \fB\-R\fP simultaneously may not work in all
+circumstances, in the sense that it may confuse certain Cisco Routers.
+They will clobber their ARP cache, replacing the ethernet address of the
+client host with the ethernet address of the next hop along the route.
+This will make subsequent normal IP traffic to and from the client host
+impossible until the ARP cache is cleared again. This may take some time.
+Setting both options is restricted to the superuser, unless the program
+is compiled with a special compile switch indicating it is safe.
+.SH "BROADCAST ADDRESS"
+Specifying the broadcast address of your local network as the target for
+ping yields a nice survey of all active hosts. The internal logic has
+been adapted to handle such broadcasts properly. All ping modes are
+supported, but a flood ping is restricted to the superuser only.
+Fast pings and cisco pings are now timeout-driven.
+Broadcasts to different networks usually don't cross gateways.
+Checking a broadcast address is only rudimentary as no subnets are
+recognized.
+.SH AUTHOR
+Mike Muuss
+.br
+CO-CONSPIRATORS
+.br
+Ron Natalie, David Paul Zimmerman, Jeffrey C Honig, Vernon Schryver
+.sp
+Rewritten by Eric Wassenaar, Nikhef-H, <e07@nikhef.nl>
+.SH SEE ALSO
+netstat(1),
+ifconfig(8),
+traceroute(8)
