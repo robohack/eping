@@ -1,4 +1,4 @@
-#	@(#)Makefile            e07@nikhef.nl (Eric Wassenaar) 950930
+#	@(#)Makefile            e07@nikhef.nl (Eric Wassenaar) 960302
 
 # ----------------------------------------------------------------------
 # Adapt the installation directories to your local standards.
@@ -20,6 +20,10 @@ MANDIR = $(DESTMAN)/man8
 
 #if defined(_AIX)
 SYSDEFS = -D_BSD -D_BSD_INCLUDES -U__STR__ -DBIT_ZERO_ON_LEFT
+#endif
+ 
+#if defined(SCO) && You have either OpenDeskTop 3 or OpenServer 5
+SYSDEFS = -DSYSV
 #endif
  
 #if defined(solaris) && You do not want to use BSD compatibility mode
@@ -49,10 +53,25 @@ CONFIGDEFS = -DMAXPKT=8192
 CONFIGDEFS =
 
 # ----------------------------------------------------------------------
+# Include file directories.
+# This program must be compiled with the same include files that
+# were used to build the resolver library you are linking with.
+# ----------------------------------------------------------------------
+
+INCL = ../include
+INCL =
+
+COMPINCL = ../compat/include
+COMPINCL =
+
+INCLUDES = -I$(INCL) -I$(COMPINCL)
+INCLUDES =
+
+# ----------------------------------------------------------------------
 # Compilation definitions.
 # ----------------------------------------------------------------------
 
-DEFS = $(CONFIGDEFS) $(SYSDEFS)
+DEFS = $(CONFIGDEFS) $(SYSDEFS) $(INCLUDES)
 
 COPTS =
 COPTS = -O
@@ -69,18 +88,24 @@ CC = cc
 # Linking definitions.
 # libresolv.a should contain the resolver library of BIND 4.8.2 or later.
 # Link it in only if your default library is different.
+# SCO keeps its own default resolver library inside libsocket.a
+#
 # lib44bsd.a contains various utility routines, and comes with BIND 4.9.*
 # You may need it if you link with the 4.9.* resolver library.
+#
 # libnet.a contains the getnet...() getserv...() getproto...() calls.
 # It is safe to leave it out and use your default library.
+# With BIND 4.9.3 the getnet...() calls are in the resolver library.
 # ----------------------------------------------------------------------
 
+RES = -lsocket				#if defined(SCO) && default
+RES =
 RES = ../res/libresolv.a
 RES = -lresolv
 
-COMPLIB =
 COMPLIB = ../compat/lib/lib44bsd.a
 COMPLIB = -lnet
+COMPLIB =
 
 LIBS = -lsocket -lnsl			#if defined(solaris) && not BSD
 LIBS =
@@ -105,7 +130,7 @@ SHELL = /bin/sh
 # Files.
 # ----------------------------------------------------------------------
 
-HDRS = port.h conf.h icmp.h exit.h defs.h
+HDRS = port.h conf.h exit.h icmp.h defs.h
 SRCS = ping.c omni.c vers.c
 OBJS = ping.o omni.o vers.o
 PROG = ping
@@ -114,11 +139,18 @@ DOCS = RELEASE_NOTES
 
 FILES = Makefile $(DOCS) $(HDRS) $(SRCS) $(MANS)
 
+PACKAGE = ping
+TARFILE = $(PACKAGE).tar
+
+CLEANUP = $(PROG) $(OBJS) $(TARFILE) $(TARFILE).Z
+
 # ----------------------------------------------------------------------
 # Rules for installation.
 # ----------------------------------------------------------------------
 
 all: $(PROG)
+
+$(OBJS): $(SRCS) $(HDRS)
 
 $(PROG): $(OBJS)
 	$(CC) $(LDFLAGS) -o $(PROG) $(OBJS) $(LIBRARIES)
@@ -130,7 +162,7 @@ man: $(MANS)
 	$(INSTALL) -m 444 ping.8 $(MANDIR)
 
 clean:
-	rm -f $(PROG) $(OBJS) *.o a.out core ping.tar ping.tar.Z
+	rm -f $(CLEANUP) *.o a.out core
 
 # ----------------------------------------------------------------------
 # Rules for maintenance.
@@ -143,11 +175,11 @@ llint:
 	lint $(DEFS) $(SRCS) -lresolv
 
 print:
-	lpr -J $(PROG) -p Makefile $(DOCS) $(HDRS) $(SRCS)
+	lpr -J $(PACKAGE) -p Makefile $(DOCS) $(HDRS) $(SRCS)
 
 dist:
-	tar cf ping.tar $(FILES)
-	compress ping.tar
+	tar cf $(TARFILE) $(FILES) linux.h
+	compress $(TARFILE)
 
 depend:
 	mkdep $(DEFS) $(SRCS)

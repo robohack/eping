@@ -1,13 +1,97 @@
-	@(#)RELEASE_NOTES       e07@nikhef.nl (Eric Wassenaar) 950930
+	@(#)RELEASE_NOTES       e07@nikhef.nl (Eric Wassenaar) 960314
 
 yymmdd		Description of changes per release
 CHANGES		Changes with respect to original utility
 TODO		Things that still need to be done
 WISHLIST	Wishes expressed by various people
+NOTES		Important issues to keep in mind
 
 # ----------------------------------------------------------------------
 # Description of changes per release
 # ----------------------------------------------------------------------
+
+960314
+	Add loose source route gateways.
+		New option -g to specify (possibly multiple) gateway
+		machines to define an explicit loose source route to
+		the target host. This works the same as in traceroute.
+	Check for available routing info.
+		If an IP options buffer is returned, make sure that it
+		contains routing info. Some hosts fail to insert routes.
+		Macintoshes sometimes fill the entire buffer with NOPs.
+	Configurable default options.
+		Use an environment variable PING_DEFAULTS to set
+		default options and parameters. These are interpolated
+		in front of the command line arguments before scanning.
+		Syntax is the same as the command line syntax.
+	Broadcast statistics.
+		Add more statistics for hosts during broadcast mode
+		(times are questionable because of extra overhead).
+	Broadcast address mask.
+		New option -b to specify the number of bits in the
+		network mask. Overrules the traditional class masks
+		when checking for a broadcast address.
+	New options.
+		Allow packet length and packet count to be specified
+		alternatively via new -l and -k options. Traditionally
+		they are given as extra parameters after the target.
+		Change the undocumented -T option to -w.
+	Allow MULTIPLE_IP_OPTIONS.
+		The default is now to allow multiple IP options.
+		We assume this is ok for most of today's routers.
+		Only for very old Cisco routers it should be turned off.
+	Miscellaneous changes.
+		Split large subroutines into more modular ones.
+		Reorganize several modules in preparation of multi-
+		target mode (a la fping).
+
+960303
+	Cache nameserver lookups.
+		DNS address-to-name translations are cached to avoid
+		excessive DNS queries. Use same code as in traceroute.
+		This allows to include full domain names in the output
+		for regular responses.
+	Adjust timeout for slow links.
+		If the round-trip time turns out to be larger than the
+		given timeout period, auto-adjust the timeout to avoid
+		injecting too many packets into the pipeline.
+		Suggested by Bela Lubkin <belal@sco.COM>
+		This feature is experimental and subject to change.
+		Change the text of the "no reply" messages to be less
+		confusing.
+	Set screen window size.
+		Initialize and dynamically update the window size of
+		the screen in cisco-ping mode.
+	Portability fixes.
+		Minor changes to run on SCO platforms.
+		SCO/OS5 comes with its own version of in_cksum().
+	Port to linux platform.
+		Add compatibility definitions in separate linux.h
+		header file. This file is not yet invoked, as it is
+		untested so far.
+
+951024
+	Correct various misspellings.
+		There are no functional changes in this release.
+
+951016
+	Enhance rtt statistics printout.
+		Add the standard deviation to the statistics summary.
+		Supply simple sqrt function to avoid linking with -lm.
+
+951015
+	Refine round-trip time reporting.
+		Print rtt appropriately in fractional milliseconds.
+		The number of printed digits depends on the value.
+		(Example:  0.123 ms  1.23 ms  12.3 ms  123 ms).
+		This can be useful for measuring very fast links,
+		but should be taken with a grain of salt on systems
+		with a poor clock resolution.
+	Miscellaneous changes.
+		Properly terminate stdout in special ping modes before
+		issuing a message to stderr, to improve readability.
+		Ensure rtt values don't cause overflow. This limits
+		their values to ~35 minutes. That seems sufficient.
 
 950930
 	Avoid potential alignment conflicts.
@@ -81,7 +165,7 @@ WISHLIST	Wishes expressed by various people
 	Loose source route support.
 		New option -L to enable loose source route mode.
 		Recognize option -l for compatibility with SUN ping.
-	Generalize ip options processing.
+	Generalize IP options processing.
 		Restrict simultaneous use of more than one IP routing
 		option, unless allowed via an explicit compile switch.
 	Broadcast support.
@@ -175,6 +259,22 @@ New features
 	Enhance error handling.
 		Recognize and act upon ICMP bounce messages and report
 		error conditions.
+	Refine round-trip time reporting.
+		Print rtt appropriately in fractional milliseconds,
+		in variable format (significant digits only).
+		Add the standard deviation to the statistics summary.
+	Update screen window size.
+		Maintain proper number of columns in cisco-ping mode.
+	Cache nameserver lookups.
+		Avoid multiple DNS queries for known IP addresses.
+	Adjust timeout for slow links.
+		Adapt the timeout value if it is too small compared to
+		the actual round-trip time.
+	Customizing default options.
+		Environment variables can be used to preset often used
+		options.
+	Loose source route gateways.
+		Define explicit loose source route to the target host.
 
 # ----------------------------------------------------------------------
 # TODO
@@ -183,3 +283,21 @@ New features
 # ----------------------------------------------------------------------
 # WISHLIST
 # ----------------------------------------------------------------------
+
+# ----------------------------------------------------------------------
+# NOTES
+# ----------------------------------------------------------------------
+
+	Timeout messages.
+		The "no reply" messages are just indicating that no
+		reply was received *within the given timeout period*.
+		They don't necessarily mean a lost packet.
+		You will see them if the target host is reachable via
+		a slow link and the given timeout value is less than
+		the actual round trip time.
+		As new packets are emitted and the pipe gets filled,
+		the messages will go away eventually (if the line has
+		a rather constant round-trip time).
+		The timeout period is now adjusted to cope with slow
+		and irregular lines.
+

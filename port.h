@@ -1,10 +1,10 @@
 /*
 ** Various portability definitions.
 **
-**	@(#)port.h              e07@nikhef.nl (Eric Wassenaar) 950930
+**	@(#)port.h              e07@nikhef.nl (Eric Wassenaar) 960302
 */
 
-#if defined(SYSV)
+#if defined(SYSV) || defined(SVR4)
 #define SYSV_MEMSET
 #define SYSV_STRCHR
 #define SYSV_SETVBUF
@@ -60,6 +60,10 @@ typedef void	sigtype_t;
 #define sig_return(n)	return
 #endif
 
+/* too primitive */
+typedef char	ptr_t;		/* generic pointer type */
+typedef u_int	siz_t;		/* general size type */
+
 #ifdef SYSV_MEMSET
 #define bzero(a,n)	(void) memset(a,'\0',n)
 #define bcopy(a,b,n)	(void) memcpy(b,a,n)
@@ -77,10 +81,20 @@ typedef void	sigtype_t;
 #define linebufmode(a)	(void) setlinebuf(a);
 #endif
 
+#if defined(SVR4)
+#define jmp_buf		sigjmp_buf
+#define setjmp(e)	sigsetjmp(e,1)
+#define longjmp(e,n)	siglongjmp(e,n)
+#endif
+
 #if defined(sun) && defined(NO_YP_LOOKUP)
 #define gethostbyname	(struct hostent *)res_gethostbyname
 #define gethostbyaddr	(struct hostent *)res_gethostbyaddr
 #endif
+
+/*
+** No prototypes yet.
+*/
 
 #define PROTO(TYPES)	()
 
