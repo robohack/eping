@@ -2,9 +2,9 @@
 .\" All rights reserved.  The Berkeley software License Agreement
 .\" specifies the terms and conditions for redistribution.
 .\"
-.\"	@(#)ping.8              e07@nikhef.nl (Eric Wassenaar) 950918
+.\"	@(#)ping.8              e07@nikhef.nl (Eric Wassenaar) 960314
 .\"
-.TH PING 8 "950918"
+.TH PING 8 "960314"
 .UC 6
 .SH NAME
 ping \- send ICMP ECHO request packets to network hosts
@@ -13,12 +13,18 @@ ping \- send ICMP ECHO request packets to network hosts
 .sp
 Flags:
 [\fB\-c\fP | \fB\-f\fP] [\fB\-F\fP] [\fB\-Q\fP]
-[\fB\-LR\fP] [\fB\-amnqv\fP] [\fB\-dr\fP]
+[\fB\-LR\fP] [\fB\-a\fP] [\fB\-mnqv\fP] [\fB\-dr\fP]
 .br
 Options:
+[\fB\-l\fP \fIlength\fP]
+[\fB\-k\fP \fIcount\fP]
 [\fB\-p\fP \fIpreload\fP]
-[\fB\-t\fP \fItimeout\fP]
 [\fB\-D\fP \fIpattern\fP]
+.br
+Options:
+[\fB\-b\fP \fInetbits\fP]
+[\fB\-g\fP \fIgateway\fP]
+[\fB\-t\fP \fItimeout\fP]
 .SH DESCRIPTION
 The Internet is a large and complex aggregation of network
 hardware, connected together by gateways. Tracking a single-point
@@ -28,14 +34,19 @@ utilizes the ICMP protocol's mandatory ECHO request datagram to
 elicit an ICMP ECHOREPLY from a host or gateway.
 ECHO request datagrams (``pings'') have an IP and ICMP header,
 followed by a \fBstruct timeval\fR, and then an arbitrary number
-of ``pad'' bytes used to fill out the packet. Default datagram
-length is 64 bytes (8 ICMP header bytes + 56 data bytes),
+of ``pad'' bytes used to fill out the packet.
+.sp
+Default datagram length is 64 bytes (8 ICMP header bytes + 56 data bytes),
 but this may be changed using the command line option \fIlength\fP.
+.sp
+The number of ping packets is unlimited, unless an explicit \fIcount\fP
+is specified.
 .PP
 The default mode is to send a packet every \fItimeout\fP seconds and
 display the response, including sequence number and round-trip time
-if the packet size allows.  Two other modes are available (which are
-mutually exclusive):
+if the packet size allows.
+.sp
+Two other modes are available (which are mutually exclusive):
 .SH SPECIAL MODES
 .TP
 .B \-c
@@ -71,14 +82,14 @@ as a valid response is received. It quits with an ``unreachable''
 indication as soon as a bounce message is received.
 .TP
 .B \-L
-Insert "loose source route" IP option in outgoing packet.
-Currently this only selects a route to the destination host and back,
-without the possibility to specify intermediate gateways.
+Insert "loose source route" IP option in outgoing packets.
+Without explicit gateways given by the \fB\-g\fP option, this selects
+a route to the destination host and back to the source host.
 This option only works on systems that allow setting of IP options.
 .TP
 .B \-R
 Insert "record route" IP option in outgoing packets, summarizing the
-routes the packets have travelled when the program quits.
+routes the packets have traveled when the program quits.
 In "very verbose" mode, the route is displayed for each reply received.
 This option only works on systems that allow setting of IP options.
 .TP
@@ -96,8 +107,9 @@ Enable printing of a summary of missed valid responses at the end.
 Numeric mode.
 Disable reverse hostname lookup of all IP addresses.  By default both
 hostname and IP address of the destination host are displayed in the
-header, summary and "record route" surveys. (In the response messages
-only the IP adress is shown to avoid potential nameserver timeouts).
+header, summary, and "record route" surveys, as well as in the response
+messages (the latter is safe since all lookups are now cached to avoid
+excessive nameserver queries).
 If the reverse hostname lookup fails, just the IP address is displayed.
 .TP
 .B \-q
@@ -123,6 +135,9 @@ If the host is not on a directly-attached network, an error is returned.
 This option can be used to ping a local host through an interface
 that has no route through it (e.g., after the interface was dropped by
 .IR routed (8C)).
+.TP
+.B \-V
+Just print the program version number, then exit.
 .SH OPTIONS
 .TP
 .BI \-t " timeout"
@@ -132,9 +147,25 @@ before sending the next packet. In these modes a new ping is sent as soon
 as a valid reply is received. In flood mode this timeout does not apply.
 The default value is 1 second.
 .TP
+.BI \-g " gateway"
+Construct a "loose source route" via this gateway to the target host.
+Up to 8 of such intermediate hosts can be specified.
+This option only works on systems that allow setting of IP options.
+.TP
+.BI \-l " length"
+Alternative option to specify the size of the ping packets.
+.TP
+.BI \-k " count"
+Alternative option to limit the number of ping packets to be sent.
+.TP
 .BI \-p " preload"
 Specifies the number of packets to preload. They are sent at startup before
-listening for a response. The default is not to send any preload packets.
+listening for a response. The default is to not send any preload packets.
+.TP
+.BI \-b " netbits"
+Specify the number of bits in the netmask that applies to given addresses.
+This overrules the traditional class masks when checking whether a given
+address is a broadcast address.
 .TP
 .BI \-D " pattern"
 Specifies the pattern to fill unused data in the packets. The default is
@@ -168,7 +199,7 @@ Because of the load it could impose on the network, it is unwise to use
 was received, and a failure (nonzero) code if there were none.
 .SH WARNING
 Specifying both \fB\-L\fP and \fB\-R\fP simultaneously may not work in all
-circumstances, in the sense that it may confuse certain Cisco Routers.
+circumstances, in the sense that it may confuse certain old Cisco routers.
 They will clobber their ARP cache, replacing the ethernet address of the
 client host with the ethernet address of the next hop along the route.
 This will make subsequent normal IP traffic to and from the client host
@@ -182,8 +213,8 @@ been adapted to handle such broadcasts properly. All ping modes are
 supported, but a flood ping is restricted to the superuser only.
 Fast pings and cisco pings are now timeout-driven.
 Broadcasts to different networks usually don't cross gateways.
-Checking a broadcast address is only rudimentary as no subnets are
-recognized.
+Checking for a broadcast address is only rudimentary. The \fB\-b\fP
+option may be necessary in case subnetting is employed.
 .SH AUTHOR
 Mike Muuss
 .br

@@ -1,7 +1,7 @@
 /*
 ** Various configuration definitions.
 **
-**	@(#)conf.h              e07@nikhef.nl (Eric Wassenaar) 940226
+**	@(#)conf.h              e07@nikhef.nl (Eric Wassenaar) 960314
 */
 
 /*
@@ -32,7 +32,7 @@
 ** MULTIPLE_IP_OPTIONS -- Allow more than one IP option
 ** ----------------------------------------------------
 **
-**	Some Cisco routers may get confused if multiple IP options are
+**	Old Cisco routers may get confused if multiple IP options are
 **	present in the request packets. The ARP cache may be clobbered.
 **	The ethernet address of the client host is replaced with the
 **	ethernet address of the next machine along the route. Subsequent
@@ -41,11 +41,11 @@
 **	time if not done manually.
 **
 **	Setting this parameter allows the use of multiple IP options.
-**	Otherwise that is restricted to the superuser only.
+**	Otherwise such is restricted to the superuser only.
 */
 
 #ifndef MULTIPLE_IP_OPTIONS
 
-#undef MULTIPLE_IP_OPTIONS		/* default is to leave if off */
+#define MULTIPLE_IP_OPTIONS		/* assume it is okay nowadays */
 
 #endif /*MULTIPLE_IP_OPTIONS*/
