@@ -1,14 +1,14 @@
-#	@(#)Makefile            e07@nikhef.nl (Eric Wassenaar) 961230
+#	@(#)Makefile            e07@nikhef.nl (Eric Wassenaar) 980828
 
 # ----------------------------------------------------------------------
 # Adapt the installation directories to your local standards.
 # ----------------------------------------------------------------------
 
 # This is where the ping executable will go.
-DESTBIN = /local/sbin
+DESTBIN = /usr/local/sbin
 
 # This is where the ping manual page will go.
-DESTMAN = /local/share/man
+DESTMAN = /usr/local/share/man
 
 BINDIR = $(DESTBIN)
 MANDIR = $(DESTMAN)/man8
@@ -30,12 +30,24 @@ SYSDEFS = -DSYSV
 SYSDEFS = -DNO_YP_LOOKUP
 #endif
 
+#if defined(linux) && The IP checksum is now ip_sum and no longer ip_csum
+SYSDEFS = -DLINUX_IPSUM
+#endif
+
+#if defined(linux) && You have the real BSD netinet header files (GLIBC)
+SYSDEFS = -D_BSD_SOURCE
+#endif
+
 SYSDEFS =
 
 # ----------------------------------------------------------------------
 # Configuration definitions.
 # See also the header file conf.h for more configuration definitions.
 # ----------------------------------------------------------------------
+
+#if defined(BIND_49) && __res_state is still shipped as struct state
+CONFIGDEFS = -DOLD_RES_STATE
+#endif
 
 # If this is a SUN with SunOS 4.1.x and you have an NC400 ethernet board
 CONFIGDEFS = -DOMNINET='"ne0"'
@@ -59,7 +71,7 @@ CONFIGDEFS = -DMULTIPLE_IP_OPTIONS
 DEFS = $(CONFIGDEFS) $(SYSDEFS)
 
 COPTS =
-COPTS = -O
+COPTS = -O2 -g -pipe
 
 CFLAGS = $(COPTS) $(DEFS)
 
@@ -129,7 +141,7 @@ $(PROG): $(OBJS)
 	$(CC) $(LDFLAGS) -o $(PROG) $(OBJS) $(LIBRARIES)
 
 install: $(PROG)
-	$(INSTALL) -m 4555 -o root -g bin $(PROG) $(BINDIR)
+	$(INSTALL) -m 4555 -o root -g wheel $(PROG) $(BINDIR)
 
 man: $(MANS)
 	$(INSTALL) -m 444 ping.8 $(MANDIR)
