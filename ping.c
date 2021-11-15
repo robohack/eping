@@ -1023,7 +1023,9 @@ char *a, *b, *c, *d;			/* optional arguments */
 **
 **	ping uses protocol numbers as defined in <netinet/in.h>.
 **	Verify whether they correspond to the values in /etc/protocols.
-**	This is probably rather paranoid.
+**	This is probably rather paranoid.  (esp. since we don't use
+**	getprotobynumber() to look up ip_p values -- we just use the
+**	IPPROTO_* values and otherwise assume their names are valid.)
 */
 
 void
@@ -1031,6 +1033,25 @@ check_proto()
 {
 	struct protoent *proto;
 
+#if 0
+	/*
+	 * XXX IPPROTO_* values are traditionally hard-coded mappings between IP
+	 * protocol names and numbers, but IPPROTO_IP is always zero, and is a
+	 * "dummy"value used in the setsocket(2) API for setting generic
+	 * IP-level options, so ever since IANA assigned a sub-protocol to #0,
+	 * looking up "ip" with getprotobyname(3) and expecting to get the same
+	 * value as IPPROTO_IP has been broken.
+	 *
+	 * In fact if raw IP packets are sent via a socket opened with a "proto"
+	 * of zero then IPPROTO_RAW is what is actually put in the protocol
+	 * field of the outgoing packets, and only packets with a prtocol ==
+	 * IPPROTO_RAW will be recieved on that socket.  (See ip(4) "RAW IP
+	 * SOCKETS".)  XXX However /etc/protocols doesn't list "raw" either.
+	 *
+	 * (XXX also some systems have shipped with an /etc/protocols file
+	 * giving "ip" instead of "ipv4", for IP-in-IP encapsulation (RFC2003)
+	 * with the assigned protocol number of 4!)
+	 */
 	proto = getprotobyname("ip");
 	if (proto == NULL)
 	{
@@ -1043,7 +1064,7 @@ check_proto()
 			proto->p_proto, IPPROTO_IP);
 		exit(EX_CONFIG);
 	}
-
+#endif
 	proto = getprotobyname("icmp");
 	if (proto == NULL)
 	{
