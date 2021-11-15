@@ -1,0 +1,81 @@
+--- Makefile.orig	Thu Dec  5 17:46:16 2002
++++ Makefile	Sun Oct 31 16:39:31 2004
+@@ -5,10 +5,11 @@
+ # ----------------------------------------------------------------------
+ 
+ # This is where the ping executable will go.
+-DESTBIN = /usr/local/sbin
++DESTBIN = ${PREFIX}/sbin
++PROGNAME= eping
+ 
+ # This is where the ping manual page will go.
+-DESTMAN = /usr/local/share/man
++DESTMAN = ${PREFIX}/share/man
+ 
+ BINDIR = $(DESTBIN)
+ MANDIR = $(DESTMAN)/man8
+@@ -71,15 +72,14 @@
+ DEFS = $(CONFIGDEFS) $(SYSDEFS)
+ 
+ COPTS =
+-COPTS = -O2 -g -pipe
+ 
+-CFLAGS = $(COPTS) $(DEFS)
++CFLAGS += $(DEFS)
+ 
+ # Select your favorite compiler.
+-CC = /usr/ucb/cc			#if defined(solaris) && BSD
+-CC = /bin/cc -arch m68k -arch i386	#if defined(next)
+-CC = /bin/cc
+-CC = cc
++#CC = /usr/ucb/cc			#if defined(solaris) && BSD
++#CC = /bin/cc -arch m68k -arch i386	#if defined(next)
++#CC = /bin/cc
++#CC = cc
+ 
+ # ----------------------------------------------------------------------
+ # Linking definitions.
+@@ -93,6 +93,7 @@
+ 
+ RES = ../res/libresolv.a
+ RES = -lresolv
++RES = 
+ 
+ COMPLIB =
+ COMPLIB = ../compat/lib/lib44bsd.a
+@@ -104,8 +105,6 @@
+ 
+ LIBRARIES = $(RES) $(COMPLIB) $(LIBS)
+ 
+-LDFLAGS =
+-
+ # ----------------------------------------------------------------------
+ # Miscellaneous definitions.
+ # ----------------------------------------------------------------------
+@@ -113,7 +112,7 @@
+ MAKE = make $(MFLAGS)
+ 
+ # This assumes the BSD install.
+-INSTALL = install -c
++#INSTALL = install -c
+ 
+ # Grrr
+ SHELL = /bin/sh
+@@ -140,11 +139,13 @@
+ $(PROG): $(OBJS)
+ 	$(CC) $(LDFLAGS) -o $(PROG) $(OBJS) $(LIBRARIES)
+ 
+-install: $(PROG)
+-	$(INSTALL) -m 4555 -o root -g wheel $(PROG) $(BINDIR)
++install: install-prog install-man
++
++install-prog: $(PROG)
++	$(BSD_INSTALL_PROGRAM) $(PROG) $(DESTDIR)$(BINDIR)/$(PROGNAME)
+ 
+-man: $(MANS)
+-	$(INSTALL) -m 444 ping.8 $(MANDIR)
++install-man: $(MANS)
++	$(BSD_INSTALL_MAN) ping.8 $(DESTDIR)$(MANDIR)/$(PROGNAME).8
+ 
+ clean:
+ 	rm -f $(PROG) $(OBJS) *.o a.out core ping.tar ping.tar.Z
