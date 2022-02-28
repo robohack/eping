@@ -17,6 +17,8 @@ COMMENT=        NIKHEF ping (by Eric Wassenaar)
 NO_CONFIGURE=	yes
 AUTO_MKDIRS=	yes
 
+SPECIAL_PERMS+=	sbin/eping ${SETUID_ROOT_PERMS}
+
 do-extract:
 	${MKDIR} ${WRKSRC}
 	${CP} -Rp ${FILESDIR}/* ${WRKSRC}/
