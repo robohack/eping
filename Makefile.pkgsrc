@@ -19,6 +19,12 @@ AUTO_MKDIRS=	yes
 
 SPECIAL_PERMS+=	sbin/eping ${SETUID_ROOT_PERMS}
 
+.include "../../mk/bsd.prefs.mk"
+
+.if ${OPSYS} != "NetBSD"
+MAKFLAGS+=	'LIBS+=-lresolv'
+.endif
+
 do-extract:
 	${MKDIR} ${WRKSRC}
 	${CP} -Rp ${FILESDIR}/* ${WRKSRC}/
