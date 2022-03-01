@@ -1,3 +1,4 @@
+# -*-makefile-bsdmake-*-
 # $NetBSD$
 
 PKGNAME=	eping-20211114
