@@ -23,7 +23,7 @@ SPECIAL_PERMS+=	sbin/eping ${SETUID_ROOT_PERMS}
 .include "../../mk/bsd.prefs.mk"
 
 .if ${OPSYS} != "NetBSD"
-MAKFLAGS+=	'LIBS+=-lresolv'
+MAKEFLAGS+=	'LIBS+=-lresolv'
 .endif
 
 do-extract:
