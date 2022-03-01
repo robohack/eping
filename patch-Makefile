@@ -1,20 +1,24 @@
---- Makefile.orig	Thu Dec  5 17:46:16 2002
-+++ Makefile	Sun Oct 31 16:39:31 2004
-@@ -5,10 +5,11 @@
+$NetBSD$
+
+--- Makefile.orig	2022-03-01 00:28:58.000000000 +0000
++++ Makefile
+@@ -5,12 +5,12 @@
  # ----------------------------------------------------------------------
  
+ # Optional installation name prefix (for example "e")
+-NAMEPREFIX = 
++NAMEPREFIX ?= e
+ 
+ # This might be an intermediate packaging destination
+-DESTDIR = 
++DESTDIR ?= 
+ 
+-PREFIX = /usr/local
++PREFIX ?= /usr/local
+ 
  # This is where the ping executable will go.
--DESTBIN = /usr/local/sbin
-+DESTBIN = ${PREFIX}/sbin
-+PROGNAME= eping
- 
- # This is where the ping manual page will go.
--DESTMAN = /usr/local/share/man
-+DESTMAN = ${PREFIX}/share/man
- 
- BINDIR = $(DESTBIN)
- MANDIR = $(DESTMAN)/man8
-@@ -71,15 +72,14 @@
+ DESTBIN = $(PREFIX)/sbin
+@@ -79,15 +79,14 @@ CONFIGDEFS = -DMULTIPLE_IP_OPTIONS
  DEFS = $(CONFIGDEFS) $(SYSDEFS)
  
  COPTS =
@@ -35,15 +39,28 @@
  
  # ----------------------------------------------------------------------
  # Linking definitions.
-@@ -93,6 +93,7 @@
+@@ -99,21 +98,19 @@ CC = cc
+ # It is safe to leave it out and use your default library.
+ # ----------------------------------------------------------------------
  
- RES = ../res/libresolv.a
- RES = -lresolv
-+RES = 
+-RES = ../res/libresolv.a
+-RES = -lresolv
++#RES = ../res/libresolv.a
++#RES = -lresolv
  
- COMPLIB =
- COMPLIB = ../compat/lib/lib44bsd.a
-@@ -104,8 +105,6 @@
+-COMPLIB =
+-COMPLIB = ../compat/lib/lib44bsd.a
+-COMPLIB = -lnet
+-COMPLIB =
++#COMPLIB =
++#COMPLIB = ../compat/lib/lib44bsd.a
++#COMPLIB = -lnet
++#COMPLIB =
+ 
+-LIBS = -lsocket -lnsl			#if defined(solaris) && not BSD
+-LIBS =
++#LIBS = -lsocket -lnsl			#if defined(solaris) && not BSD
++#LIBS =
  
  LIBRARIES = $(RES) $(COMPLIB) $(LIBS)
  
@@ -52,7 +69,7 @@
  # ----------------------------------------------------------------------
  # Miscellaneous definitions.
  # ----------------------------------------------------------------------
-@@ -113,7 +112,7 @@
+@@ -121,7 +118,7 @@ LDFLAGS =
  MAKE = make $(MFLAGS)
  
  # This assumes the BSD install.
@@ -61,21 +78,3 @@
  
  # Grrr
  SHELL = /bin/sh
-@@ -140,11 +139,13 @@
- $(PROG): $(OBJS)
- 	$(CC) $(LDFLAGS) -o $(PROG) $(OBJS) $(LIBRARIES)
- 
--install: $(PROG)
--	$(INSTALL) -m 4555 -o root -g wheel $(PROG) $(BINDIR)
-+install: install-prog install-man
-+
-+install-prog: $(PROG)
-+	$(BSD_INSTALL_PROGRAM) $(PROG) $(DESTDIR)$(BINDIR)/$(PROGNAME)
- 
--man: $(MANS)
--	$(INSTALL) -m 444 ping.8 $(MANDIR)
-+install-man: $(MANS)
-+	$(BSD_INSTALL_MAN) ping.8 $(DESTDIR)$(MANDIR)/$(PROGNAME).8
- 
- clean:
- 	rm -f $(PROG) $(OBJS) *.o a.out core ping.tar ping.tar.Z
