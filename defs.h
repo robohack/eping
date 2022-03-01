@@ -10,84 +10,84 @@
 */
 	/* main.c */
 
-int main		PROTO((int, char **));
-void set_defaults	PROTO((char *, int, char **));
-int getval		PROTO((char *, char *, int, int));
-void fatal		PROTO((char *, ...));
-void error		PROTO((char *, ...));
-void check_proto	PROTO((void));
-void get_socket		PROTO((void));
+int main		__P((int, char **));
+void set_defaults	__P((char *, int, char **));
+int getval		__P((char *, char *, int, int));
+void fatal		__P((const char *, ...));
+void error		__P((const char *, ...));
+void check_proto	__P((void));
+void get_socket		__P((void));
 #ifdef IP_OPTIONS
-void set_options	PROTO((void));
+void set_options	__P((void));
 #endif /*IP_OPTIONS*/
 
 	/* ping.c */
 
-void ping		PROTO((ipaddr_t, int));
-sigtype_t ping_alarm	PROTO((int));
-int send_ping		PROTO((int));
-int recv_ping		PROTO((void));
-int wait_ping		PROTO((int));
-int check_ping		PROTO((u_char *, int));
-int check_fail		PROTO((struct icmp *, int));
-sigtype_t print_stats	PROTO((int));
-sigtype_t prefinish	PROTO((int));
-sigtype_t finish	PROTO((int));
-void cleanup		PROTO((void));
+void ping		__P((ipaddr_t, int));
+sigtype_t ping_alarm	__P((int));
+int send_ping		__P((int));
+int recv_ping		__P((void));
+int wait_ping		__P((int));
+int check_ping		__P((u_char *, int));
+int check_fail		__P((struct icmp *, int));
+sigtype_t print_stats	__P((int));
+sigtype_t prefinish	__P((int));
+sigtype_t finish	__P((int));
+void cleanup		__P((void));
 
 	/* dump.c */
 
-void print_icmph	PROTO((struct icmp *, int));
-void print_ippkt	PROTO((struct ip *, int));
-void print_iphdr	PROTO((struct ip *, int));
+void print_icmph	__P((struct icmp *, int));
+void print_ippkt	__P((struct ip *, int));
+void print_iphdr	__P((struct ip *, int));
 #ifdef IP_OPTIONS
-void print_options	PROTO((u_char *, int));
-void print_route	PROTO((u_char *));
-bool check_route	PROTO((u_char *, int));
+void print_options	__P((u_char *, int));
+void print_route	__P((u_char *));
+bool check_route	__P((u_char *, int));
 #endif /*IP_OPTIONS*/
 
 	/* util.c */
 
-char *pr_port		PROTO((char *, u_short));
-char *pr_addr		PROTO((struct in_addr));
-char *inetname		PROTO((struct in_addr));
-char *maphostbyaddr	PROTO((struct in_addr));
-void print_gen_stats	PROTO((stats *));
-void print_timing_stats	PROTO((stats *));
-void record_stats	PROTO((stats *, time_t));
-void clear_stats	PROTO((stats *));
-void update_hosts	PROTO((struct in_addr, bool, time_t));
-void show_hosts		PROTO((void));
+char *pr_port		__P((char *, u_int));
+char *pr_addr		__P((struct in_addr));
+char *inetname		__P((struct in_addr));
+char *maphostbyaddr	__P((struct in_addr));
+void print_gen_stats	__P((stats *));
+void print_timing_stats	__P((stats *));
+void record_stats	__P((stats *, time_t));
+void clear_stats	__P((stats *));
+void update_hosts	__P((struct in_addr, bool, time_t));
+void show_hosts		__P((void));
 #ifdef IP_OPTIONS
-void update_routes	PROTO((u_char *, int, bool, time_t));
-void show_routes	PROTO((void));
+void update_routes	__P((u_char *, int, bool, time_t));
+void show_routes	__P((void));
 #endif /*IP_OPTIONS*/
-void show_missed	PROTO((void));
-void c_put		PROTO((char *));
-sigtype_t setwindow	PROTO((int));
-time_t tvsub		PROTO((struct timeval *, struct timeval *));
-char *tvprint		PROTO((time_t));
-u_short in_checksum	PROTO((u_short *, int));
-ipaddr_t getgate	PROTO((char *));
-bool gatewayaddr	PROTO((struct in_addr));
-bool bcast_addr		PROTO((struct in_addr));
+void show_missed	__P((void));
+void c_put		__P((char *));
+sigtype_t setwindow	__P((int));
+time_t tvsub		__P((struct timeval *, struct timeval *));
+char *tvprint		__P((time_t));
+u_short in_checksum	__P((u_short *, int));
+ipaddr_t getgate	__P((char *));
+bool gatewayaddr	__P((struct in_addr));
+bool bcast_addr		__P((struct in_addr));
 
 	/* misc.c */
 
-char *maxstr		PROTO((char *, int, bool));
-ptr_t *xalloc		PROTO((ptr_t *, siz_t));
-char *itoa		PROTO((int));
-double xsqrt		PROTO((double));
+char *maxstr		__P((char *, int, bool));
+ptr_t *xalloc		__P((ptr_t *, siz_t));
+char *itoa		__P((int));
+double xsqrt		__P((double));
 
 	/* host.c */
 
-void get_targets	PROTO((int, char **));
-void add_host		PROTO((char *));
+void get_targets	__P((int, char **));
+void add_host		__P((char *));
 
 	/* omni.c */
 
 #ifdef OMNINET
-int initdevice		PROTO((char *));
+int initdevice		__P((char *));
 #endif /*OMNINET*/
 
 /*
@@ -100,8 +100,8 @@ int initdevice		PROTO((char *));
 #include <arpa/inet.h>
 #else
 
-ipaddr_t inet_addr	PROTO((CONST char *));
-char *inet_ntoa		PROTO((struct in_addr));
+ipaddr_t inet_addr	__P((CONST char *));
+char *inet_ntoa		__P((struct in_addr));
 
 #endif
 
@@ -109,8 +109,8 @@ char *inet_ntoa		PROTO((struct in_addr));
 
 #if !defined(index)
 
-char *index		PROTO((const char *, int));
-char *rindex		PROTO((const char *, int));
+char *index		__P((const char *, int));
+char *rindex		__P((const char *, int));
 
 #endif
 
@@ -120,8 +120,8 @@ char *rindex		PROTO((const char *, int));
 #include <string.h>
 #else
 
-char *strcpy		PROTO((char *, const char *));
-char *strncpy		PROTO((char *, const char *, siz_t));
+char *strcpy		__P((char *, const char *));
+char *strncpy		__P((char *, const char *, siz_t));
 
 #endif
 
@@ -131,11 +131,11 @@ char *strncpy		PROTO((char *, const char *, siz_t));
 #include <stdlib.h>
 #else
 
-char *getenv		PROTO((const char *));
-ptr_t *malloc		PROTO((siz_t));
-ptr_t *realloc		PROTO((ptr_t *, siz_t));
-free_t free		PROTO((ptr_t *));
-void exit		PROTO((int));
+char *getenv		__P((const char *));
+ptr_t *malloc		__P((siz_t));
+ptr_t *realloc		__P((ptr_t *, siz_t));
+free_t free		__P((ptr_t *));
+void exit		__P((int));
 
 #endif
 
@@ -145,6 +145,6 @@ void exit		PROTO((int));
 #include <unistd.h>
 #else
 
-unsigned int alarm	PROTO((unsigned int));
+unsigned int alarm	__P((unsigned int));
 
 #endif

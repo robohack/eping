@@ -151,23 +151,66 @@ typedef int	free_t;
 #endif
 
 /*
-** No prototypes yet.
-*/
-
-#define PROTO(TYPES)	()
-
-#if !defined(__STDC__) || defined(apollo)
-#define Proto(TYPES)	()
-#else
-#define Proto(TYPES)	TYPES
+ * FreeBSD (and Darwin in its image) is a bit brain-dead in the way they do
+ * their multiple typedef avoidance -- i.e. they still follow the ancient
+ * 4.4BSD style of using the fact that _BSD_SOCKLEN_T_ is NOT defined in order
+ * to typedef socklen_t at the earliest point it's needed.  However they leave
+ * no means for applications to know if the typedef has already been done.
+ *
+ * The most elegant way to protect typedefs is to prefix the type name with
+ * "__" for the typedef and then use a CPP #define to map the true unprefixed
+ * name to the actual typedef name.  This way the presence of the type name as
+ * a #define tells us that the typedef for it has already been done.
+ *
+ * All the other schemes are just inelegant hacks, but at least they're better
+ * than having to know the details of individual OS library implementations!
+ *
+ * FYI: In NetBSD socklen_t came into use just before 1.3J:
+ *
+ *	(__NetBSD_Version__ - 0) > 103100000
+ *
+ * Not sure when GNU LibC added socklen_t, but it's in 2.1 at least.
+ */
+#if (defined(__FreeBSD__) || defined(__darwin__)) && defined(_BSD_SOCKLEN_T_)
+# include "ERROR: something's wrong with the #includes above!"
+#endif
+/* Sigh, standards are such wonderful things.... */
+#if !defined(socklen_t) && \
+    !defined(__FreeBSD__) && !defined(__darwin__) && \
+    !defined(_SOCKLEN_T) && !defined(__socklen_t_defined) && \
+    (!defined(__GLIBC__) || (__GLIBC__ - 0) < 2) && \
+    (!defined(__GLIBC_MINOR__) || (__GLIBC_MINOR__ - 0) < 1)
+# if (/* SunOS-4 gcc */defined(__sun__) && !defined(__svr4__)) || \
+     (/* SunOS-4 cc */defined(sun) && defined(unix) && !defined(__svr4__)) || \
+     (/* 4.3BSD */defined(BSD) && ((BSD - 0) > 0) && ((BSD - 0) < 199506))
+typedef int		__socklen_t;	/* 4.3BSD and older */
+# else
+typedef size_t		__socklen_t;	/* P1003.1g socket-related datum length */
+# endif
+typedef __socklen_t	socklen_t;
+# define socklen_t	__socklen_t
 #endif
 
 #if !defined(__STDC__) || defined(apollo)
 #define const
 #endif
 
-#if defined(__STDC__) && defined(BIND_49)
-#define CONST	const
+#ifndef __P		/* in *BSD's <sys/cdefs.h>, included by everything! */
+# if ((__STDC__ - 0) > 0) || defined(__cplusplus)
+#  define __P(protos)	protos		/* full-blown ANSI C */
+# else
+#  define __P(protos)	()		/* traditional C */
+# endif
+#endif
+
+#ifndef const		/* in *BSD's <sys/cdefs.h>, included by everything! */
+# if ((__STDC__ - 0) <= 0) || defined(apollo)
+#  define const		/* NOTHING */
+# endif
+#endif
+
+#ifdef __STDC__
+# define VA_START(args, lastarg)       va_start(args, lastarg)
 #else
-#define CONST
+# define VA_START(args, lastarg)       va_start(args)
 #endif

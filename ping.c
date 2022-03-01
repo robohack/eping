@@ -101,6 +101,12 @@ static char Version[] = "@(#)ping.c	e07@nikhef.nl (Eric Wassenaar) 990522";
 #include <arpa/nameser.h>
 #include <resolv.h>
 
+#ifdef __STDC__
+# include <stdarg.h>
+#else
+# include <varargs.h>
+#endif
+
 #if defined(linux)
 #include "linux.h"		/* special compatibility definitions */
 #endif
@@ -989,13 +995,25 @@ int maxvalue;				/* maximum value for option */
 **		Aborts after issuing error message.
 */
 
-void /*VARARGS1*/
-fatal(fmt, a, b, c, d)
-char *fmt;				/* format of message */
-char *a, *b, *c, *d;			/* optional arguments */
+void
+#ifdef __STDC__
+fatal(const char *fmt, ...)
+#else
+/*VARARGS1*/
+fatal(fmt, va_alist)
+	const char *fmt;		/* format of message */
+	va_dcl				/* arguments for printf */
+#endif
 {
-	(void) fprintf(stderr, fmt, a, b, c, d);
-	(void) fprintf(stderr, "\n");
+	va_list ap;
+
+	VA_START(ap, fmt);
+	(void) vfprintf(stderr, fmt, ap);
+	va_end(ap);
+
+	if (fmt[strlen(fmt) - 1] != '\n')
+		(void) fputc('\n', stderr);
+
 	exit(EX_USAGE);
 }
 
@@ -1008,13 +1026,24 @@ char *a, *b, *c, *d;			/* optional arguments */
 **		None.
 */
 
-void /*VARARGS1*/
-error(fmt, a, b, c, d)
-char *fmt;				/* format of message */
-char *a, *b, *c, *d;			/* optional arguments */
+void
+#ifdef __STDC__
+error(const char *fmt, ...)
+#else
+/*VARARGS1*/
+error(fmt, va_alist)
+	const char *fmt;		/* format of message */
+	va_dcl				/* arguments for printf */
+#endif
 {
-	(void) fprintf(stderr, fmt, a, b, c, d);
-	(void) fprintf(stderr, "\n");
+	va_list ap;
+
+	VA_START(ap, fmt);
+	(void) vfprintf(stderr, fmt, ap);
+	va_end(ap);
+
+	if (fmt[strlen(fmt) - 1] != '\n')
+		(void) fputc('\n', stderr);
 }
 
 /*
@@ -1619,7 +1648,7 @@ int seqnum;				/* packet sequence number */
 int
 recv_ping()
 {
-	int fromlen;			/* size of address buffer */
+	socklen_t fromlen;		/* size of address buffer */
 	int len;			/* size of input packet buffer */
 	int cc;				/* size actually read */
 
@@ -2665,7 +2694,7 @@ int ipoptlen;				/* total size of options buffer */
 char *
 pr_port(protocol, port)
 char *protocol;				/* the protocol used */
-u_short port;				/* port number in network order */
+u_int port;				/* port number in network order */
 {
 	struct servent *service;
 	static char buf[BUFSIZ];
