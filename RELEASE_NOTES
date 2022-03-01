@@ -1,8 +1,10 @@
 	@(#)RELEASE_NOTES       e07@nikhef.nl (Eric Wassenaar) 990522
 
-	URL	ftp://ftp.nikhef.nl/pub/network/ping.tar.Z
-	URL	http://www.nikhef.nl/user/e07
+	URL	https://github.com/robohack/vrfy/
+	URL	http://www.planix.com/~woods/projects/index.html
 
+# Table of Contents
+# -----------------
 yymmdd		Description of changes per release
 CHANGES		Changes with respect to original utility
 TODO		Things that still need to be done
@@ -12,6 +14,10 @@ NOTES		Important issues to keep in mind
 # ----------------------------------------------------------------------
 # Description of changes per release
 # ----------------------------------------------------------------------
+
+20220228
+        More portability fixes
+        Pkgsrc support now works for Darwin too.
 
 990522
 	Minor portability changes.
