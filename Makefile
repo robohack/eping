@@ -4,11 +4,19 @@
 # Adapt the installation directories to your local standards.
 # ----------------------------------------------------------------------
 
+# Optional installation name prefix (for example "e")
+NAMEPREFIX = 
+
+# This might be an intermediate packaging destination
+DESTDIR = 
+
+PREFIX = /usr/local
+
 # This is where the ping executable will go.
-DESTBIN = /usr/local/sbin
+DESTBIN = $(PREFIX)/sbin
 
 # This is where the ping manual page will go.
-DESTMAN = /usr/local/share/man
+DESTMAN = $(PREFIX)/share/man
 
 BINDIR = $(DESTBIN)
 MANDIR = $(DESTMAN)/man8
@@ -126,10 +134,10 @@ HDRS = port.h conf.h linux.h exit.h icmp.h defs.h
 SRCS = ping.c omni.c vers.c
 OBJS = ping.o omni.o vers.o
 PROG = ping
-MANS = ping.8
+MAN = $(PROG).8
 DOCS = RELEASE_NOTES
 
-FILES = Makefile $(DOCS) $(HDRS) $(SRCS) $(MANS)
+FILES = Makefile $(DOCS) $(HDRS) $(SRCS) $(MAN)
 
 # ----------------------------------------------------------------------
 # Rules for installation.
@@ -140,11 +148,13 @@ all: $(PROG)
 $(PROG): $(OBJS)
 	$(CC) $(LDFLAGS) -o $(PROG) $(OBJS) $(LIBRARIES)
 
-install: $(PROG)
-	$(INSTALL) -m 4555 -o root -g wheel $(PROG) $(BINDIR)
+install: install-prog install-man
 
-man: $(MANS)
-	$(INSTALL) -m 444 ping.8 $(MANDIR)
+install-prog: $(PROG)
+	$(INSTALL) -m 4555 -o root -g wheel $(PROG) $(DESTDIR)$(BINDIR)/$(NAMEPREFIX)$(PROG)
+
+install-man: $(MAN)
+	$(INSTALL) -m 444 $(MAN) $(DESTDIR)$(MANDIR)/$(NAMEPREFIX)$(MAN)
 
 clean:
 	rm -f $(PROG) $(OBJS) *.o a.out core ping.tar ping.tar.Z
