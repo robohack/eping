@@ -21,6 +21,9 @@ operations and their connection to the Internet.  His original web page
 at www.nikhef.nl/user/e07, and the FTP archive of his tools at
 ftp.nikhef.nl, was removed shortly after his death.
 
+There is however a mirror of Eric's NIKHEF FTP tools directory available
+here:  http://www.dfred.net/public/src/nikhef_nettools/
+
 See the tribute to him in the [NIKHEF 2000 Annual
 report](https://www.nikhef.nl/wp-content/uploads/2016/01/Annual_Report-2000.pdf
 "NIKHEF 2000 Annual report").
